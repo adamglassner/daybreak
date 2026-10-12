@@ -184,6 +184,9 @@ fun ClockScreen(
                 ClockStyle.TERMINAL -> Box(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                     TerminalHero(settings.use24h, settings.showSeconds, 190.dp)
                 }
+                ClockStyle.CLASSIC -> ClassicWindow("Daybreak - Clock", Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    StandardHero(settings)
+                }
                 else -> StandardHero(settings)
             }
             Spacer(Modifier.height(14.dp))

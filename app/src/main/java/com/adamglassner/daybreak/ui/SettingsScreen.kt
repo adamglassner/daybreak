@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -146,6 +147,11 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
             UpdatesCard()
         }
 
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionLabel("Backup")
+            BackupCard()
+        }
+
         DText(
             "Daybreak $APP_VERSION · Weather by Open-Meteo · Radio by radio-browser.info",
             12.sp, p.muted, modifier = Modifier.fillMaxWidth().padding(top = 24.dp), align = TextAlign.Center,
@@ -169,6 +175,7 @@ private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, 
         ClockStyle.RETRO -> "Retro"
         ClockStyle.RADIO -> "Radio"
         ClockStyle.TERMINAL -> "Terminal"
+        ClockStyle.CLASSIC -> "Classic Daybreak"
     }
     val shape = RoundedCornerShape(16.dp)
     Column(
@@ -191,6 +198,7 @@ private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, 
                     ClockStyle.RETRO -> c(0xFF2B231B)
                     ClockStyle.RADIO -> c(0xFF0A0606)
                     ClockStyle.TERMINAL -> c(0xFF000000)
+                    ClockStyle.CLASSIC -> c(0xFFC0C0C0)
                 },
             ),
             contentAlignment = Alignment.Center,
@@ -200,6 +208,12 @@ private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, 
                 ClockStyle.COLORS -> DText("10:09", 20.sp, c(0xFF1A0B3A), FontWeight.SemiBold, family = FredokaFont)
                 ClockStyle.RETRO -> DText("10:09", 26.sp, c(0xFFF2B544), family = BebasFont, letterSpacing = 1.sp)
                 ClockStyle.TERMINAL -> DText(">10:09_", 24.sp, c(0xFF33FF66), family = TerminalFont)
+                ClockStyle.CLASSIC -> Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxWidth().height(12.dp).background(Brush.horizontalGradient(listOf(c(0xFF000080), c(0xFF1084D0)))))
+                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        DText("10:09", 20.sp, c(0xFF000000), FontWeight.Bold, family = PixelFont)
+                    }
+                }
                 ClockStyle.RADIO -> Column(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxWidth().height(10.dp).background(c(0xFF6A4428)))
                     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -208,7 +222,7 @@ private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, 
                 }
             }
         }
-        DText(name, 14.sp, p.text, FontWeight.Bold, maxLines = 1)
+        DText(name, 14.sp, p.text, FontWeight.Bold, maxLines = 2, align = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 

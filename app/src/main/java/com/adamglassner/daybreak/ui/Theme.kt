@@ -78,6 +78,11 @@ private val JetMono = FontFamily(
     Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
     Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
 )
+private val Pixel = FontFamily(
+    Font(R.font.pixelify_regular, FontWeight.Normal),
+    Font(R.font.pixelify_bold, FontWeight.Bold),
+)
+val PixelFont = Pixel
 val TerminalFont = Vt323
 val MonoFont = JetMono
 val RadioFont = Archivo
@@ -135,6 +140,16 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
             c(0xFF0A7A1F), c(0xFFFFFFFF), c(0xFFCDEBD2), c(0xFF06651A), c(0xFF4C7A00), c(0xFFFFFFFF),
             c(0xFFF4FBF4), c(0xFFD3EDD3), listOf(c(0xFFF4FBF4)), c(0xFF0A3A12),
         )
+        // "Classic Daybreak": Windows 95/98 gray, bevels and navy title bars.
+        ClockStyle.CLASSIC -> if (dark) Palette(
+            true, c(0xFF303030), c(0xFF3C3C3C), c(0xFF1E1E1E), c(0xFF1A1A1A), c(0xFFFFFFFF), c(0xFFC8C8C8),
+            c(0xFF3A6EA5), c(0xFFFFFFFF), c(0xFF4A4A4A), c(0xFF9DC3F0), c(0xFFFFD700), c(0xFF000000),
+            c(0xFF3C3C3C), c(0xFF4A4A4A), listOf(c(0xFF3C3C3C)), c(0xFFFFFFFF),
+        ) else Palette(
+            false, c(0xFFC0C0C0), c(0xFFC0C0C0), c(0xFFFFFFFF), c(0xFF808080), c(0xFF000000), c(0xFF303030),
+            c(0xFF000080), c(0xFFFFFFFF), c(0xFFDFDFDF), c(0xFF000080), c(0xFF808000), c(0xFFFFFFFF),
+            c(0xFFC0C0C0), c(0xFFDFDFDF), listOf(c(0xFFC0C0C0)), c(0xFF000000),
+        )
     }
     val f = when (style) {
         ClockStyle.STOCK -> Fonts(Figtree, Figtree, FontWeight.SemiBold, false)
@@ -142,6 +157,7 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
         ClockStyle.RETRO -> Fonts(Bebas, SpaceMono, FontWeight.Bold, true)
         ClockStyle.RADIO -> Fonts(Archivo, Archivo, FontWeight.Bold, true)
         ClockStyle.TERMINAL -> Fonts(Vt323, JetMono, FontWeight.Bold, false)
+        ClockStyle.CLASSIC -> Fonts(Pixel, Pixel, FontWeight.Bold, false)
     }
     val radius = when (style) {
         ClockStyle.STOCK -> 22.dp
@@ -149,6 +165,7 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
         ClockStyle.RETRO -> 10.dp
         ClockStyle.RADIO -> 10.dp
         ClockStyle.TERMINAL -> 0.dp
+        ClockStyle.CLASSIC -> 0.dp
     }
     return Db(style, p, f, radius)
 }

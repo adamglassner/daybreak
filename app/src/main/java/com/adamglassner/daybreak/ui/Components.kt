@@ -40,6 +40,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -148,6 +152,10 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
         DText("# " + text.lowercase(), 13.sp, db.p.muted, FontWeight.Bold, modifier = modifier)
         return
     }
+    if (db.style == ClockStyle.CLASSIC) {
+        DText(text, 14.sp, db.p.text, FontWeight.Bold, modifier = modifier)
+        return
+    }
     DText(
         text.uppercase(), 13.sp, db.p.muted, FontWeight.Bold, modifier = modifier,
         italic = db.style == ClockStyle.RADIO, letterSpacing = 1.2.sp,
@@ -167,7 +175,9 @@ fun DbCard(
     val db = LocalDb.current
     val shape = RoundedCornerShape(db.radius)
     var m = modifier.clip(shape).background(color ?: db.p.surface)
-    if (db.style == ClockStyle.RETRO || db.style == ClockStyle.RADIO) {
+    if (db.style == ClockStyle.CLASSIC) {
+        m = m.bevel(db.p.dark)
+    } else if (db.style == ClockStyle.RETRO || db.style == ClockStyle.RADIO) {
         m = m.border(BorderStroke(2.dp, if (db.style == ClockStyle.RADIO) db.p.panelBorder else db.p.border), shape)
     } else if (!db.p.dark && db.style == ClockStyle.STOCK) {
         m = m.border(BorderStroke(1.dp, db.p.border), shape)
@@ -205,6 +215,10 @@ fun SettingRow(
 @Composable
 fun DbSwitch(checked: Boolean, onChange: (Boolean) -> Unit, description: String) {
     val p = LocalDb.current.p
+    if (LocalDb.current.style == ClockStyle.CLASSIC) {
+        ClassicCheckbox(checked, onChange, description)
+        return
+    }
     Switch(
         checked = checked,
         onCheckedChange = onChange,
@@ -224,6 +238,14 @@ fun DbSwitch(checked: Boolean, onChange: (Boolean) -> Unit, description: String)
 fun Chip(text: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val db = LocalDb.current
     val p = db.p
+    if (db.style == ClockStyle.CLASSIC) {
+        Box(
+            modifier.heightIn(min = 44.dp).background(if (selected) p.surface2 else p.surface)
+                .bevel(p.dark, sunken = selected).clickable(onClick = onClick).padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) { DText(text, 15.sp, p.text, if (selected) FontWeight.Bold else FontWeight.Normal, align = TextAlign.Center, maxLines = 1) }
+        return
+    }
     val shape = RoundedCornerShape(if (db.style == ClockStyle.RETRO || db.style == ClockStyle.RADIO) 8.dp else 14.dp)
     Box(
         modifier
@@ -261,6 +283,15 @@ fun BigButton(
     val p = db.p
     val bg = color ?: if (primary) p.accent else p.surface2
     val fg = onColor ?: if (primary) p.onAccent else p.text
+    if (db.style == ClockStyle.CLASSIC) {
+        // A Windows 95 push button; the main one gets the dark "default button" outline.
+        Box(
+            modifier.heightIn(min = 52.dp).then(if (primary) Modifier.border(1.dp, Color.Black) else Modifier)
+                .background(p.surface).bevel(p.dark).clickable(onClick = onClick).padding(horizontal = 18.dp),
+            contentAlignment = Alignment.Center,
+        ) { DText(text, 17.sp, p.text, if (primary) FontWeight.Bold else FontWeight.Normal) }
+        return
+    }
     val shape = RoundedCornerShape(if (db.style == ClockStyle.RETRO || db.style == ClockStyle.RADIO) 10.dp else 30.dp)
     Box(
         modifier.heightIn(min = 60.dp).clip(shape).background(bg).clickable(onClick = onClick).padding(horizontal = 18.dp),
@@ -287,7 +318,9 @@ fun IconCircle(icon: ImageVector, description: String, onClick: () -> Unit, modi
         else -> db.p.text
     }
     Box(
-        modifier.size(48.dp).clip(shape).background(bg).clickable(onClick = onClick)
+        modifier.size(48.dp).clip(shape).background(bg)
+            .then(if (db.style == ClockStyle.CLASSIC) Modifier.bevel(db.p.dark) else Modifier)
+            .clickable(onClick = onClick)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
@@ -388,6 +421,12 @@ fun AnalogClock(time: LocalTime, size: Dp, modifier: Modifier = Modifier) {
                 drawCircle(face, r, cx)
                 drawCircle(p.border, r - u, cx, style = Stroke(2 * u))
             }
+            ClockStyle.CLASSIC -> {
+                face = Color.White; hand = Color.Black; sec = c(0xFFC00000); tick = Color.Black; minorTick = c(0xFF808080)
+                drawCircle(c(0xFF808080), r, cx)
+                drawCircle(Color.White, r - 2 * u, cx, style = Stroke(2 * u))
+                drawCircle(face, r - 5 * u, cx)
+            }
             ClockStyle.COLORS -> {
                 face = p.accent; hand = p.onAccent; sec = Color.White; tick = p.onAccent; minorTick = p.onAccent
                 drawCircle(face, r, cx)
@@ -441,9 +480,15 @@ fun AnalogClock(time: LocalTime, size: Dp, modifier: Modifier = Modifier) {
             ClockStyle.RADIO -> for (i in 0 until 4) {
                 drawLine(tick, pt(i * 90f, 76 * u), pt(i * 90f, 62 * u), 4 * u)
             }
+            ClockStyle.CLASSIC -> for (i in 0 until 60) {
+                val major = i % 5 == 0
+                val s = (if (major) 5f else 2f) * u
+                val at = pt(i * 6f, 80 * u)
+                drawRect(if (major) tick else minorTick, Offset(at.x - s / 2, at.y - s / 2), Size(s, s))
+            }
         }
 
-        val square = db.style == ClockStyle.RETRO || db.style == ClockStyle.TERMINAL
+        val square = db.style == ClockStyle.RETRO || db.style == ClockStyle.TERMINAL || db.style == ClockStyle.CLASSIC
         val cap = if (square) StrokeCap.Square else StrokeCap.Round
         val hourW = when (db.style) { ClockStyle.COLORS -> 10f; ClockStyle.RADIO -> 8f; ClockStyle.RETRO -> 6f; else -> 7f } * u
         val minW = when (db.style) { ClockStyle.COLORS -> 6f; ClockStyle.RADIO -> 5f; ClockStyle.RETRO -> 3.5f; else -> 4f } * u
@@ -633,6 +678,81 @@ fun Scanlines(modifier: Modifier = Modifier) {
         while (y < size.height) {
             drawRect(Color.Black.copy(alpha = 0.22f), Offset(0f, y), Size(size.width, step / 3f))
             y += step
+        }
+    }
+}
+
+// ---------- Classic Daybreak (Windows 95/98 look) ----------
+
+/** The two-tone 3D edge of Windows 95 controls: raised (buttons, panels) or sunken (fields, pressed). */
+fun Modifier.bevel(dark: Boolean, sunken: Boolean = false, width: Dp = 2.dp): Modifier = drawWithContent {
+    drawContent()
+    val w = width.toPx() / 2f
+    val highlight = if (dark) c(0xFF6A6A6A) else Color.White
+    val light = if (dark) c(0xFF555555) else c(0xFFDFDFDF)
+    val shadow = if (dark) c(0xFF1A1A1A) else c(0xFF808080)
+    val black = Color.Black
+    val outerTL = if (sunken) shadow else highlight
+    val innerTL = if (sunken) black else light
+    val outerBR = if (sunken) highlight else black
+    val innerBR = if (sunken) light else shadow
+    val sw = size.width
+    val sh = size.height
+    drawRect(outerTL, Offset(0f, 0f), Size(sw, w))
+    drawRect(outerTL, Offset(0f, 0f), Size(w, sh))
+    drawRect(outerBR, Offset(0f, sh - w), Size(sw, w))
+    drawRect(outerBR, Offset(sw - w, 0f), Size(w, sh))
+    drawRect(innerTL, Offset(w, w), Size(sw - 2 * w, w))
+    drawRect(innerTL, Offset(w, w), Size(w, sh - 2 * w))
+    drawRect(innerBR, Offset(w, sh - 2 * w), Size(sw - 2 * w, w))
+    drawRect(innerBR, Offset(sw - 2 * w, w), Size(w, sh - 2 * w))
+}
+
+/** Navy gradient title bar, like a Windows 98 window. */
+@Composable
+fun ClassicTitleBar(title: String, modifier: Modifier = Modifier) {
+    val p = LocalDb.current.p
+    val colors = if (p.dark) listOf(c(0xFF3A6EA5), c(0xFF6A9AD0)) else listOf(c(0xFF000080), c(0xFF1084D0))
+    Row(
+        modifier.fillMaxWidth().heightIn(min = 26.dp).background(Brush.horizontalGradient(colors)).padding(horizontal = 6.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        DText(title, 15.sp, Color.White, FontWeight.Bold, maxLines = 1)
+    }
+}
+
+/** A raised gray window with a title bar around [content]. */
+@Composable
+fun ClassicWindow(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    val p = LocalDb.current.p
+    Column(modifier.background(p.surface).bevel(p.dark).padding(4.dp)) {
+        ClassicTitleBar(title)
+        Column(Modifier.fillMaxWidth().padding(10.dp), content = content)
+    }
+}
+
+/** A sunken white check box with a check mark, used in place of switches. */
+@Composable
+fun ClassicCheckbox(checked: Boolean, onChange: (Boolean) -> Unit, description: String) {
+    val p = LocalDb.current.p
+    Box(
+        Modifier.size(44.dp).clickable { onChange(!checked) }.semantics {
+            contentDescription = description
+            stateDescription = if (checked) "Checked" else "Not checked"
+        },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.size(22.dp).background(p.surface2).bevel(p.dark, sunken = true), contentAlignment = Alignment.Center) {
+            if (checked) {
+                Canvas(Modifier.size(12.dp)) {
+                    val path = Path().apply {
+                        moveTo(size.width * 0.05f, size.height * 0.5f)
+                        lineTo(size.width * 0.4f, size.height * 0.85f)
+                        lineTo(size.width * 0.95f, size.height * 0.1f)
+                    }
+                    drawPath(path, p.text, style = Stroke(width = 2.5.dp.toPx()))
+                }
+            }
         }
     }
 }

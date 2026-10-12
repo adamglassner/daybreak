@@ -65,6 +65,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.adamglassner.daybreak.alarm.Scheduler
 import com.adamglassner.daybreak.data.ClockStyle
 import com.adamglassner.daybreak.data.Store
+import com.adamglassner.daybreak.ui.bevel
 import com.adamglassner.daybreak.ui.AlarmEditScreen
 import com.adamglassner.daybreak.ui.AlarmsScreen
 import com.adamglassner.daybreak.ui.BedtimeScreen
@@ -235,6 +236,7 @@ private fun NavBar(selected: Int, onSelect: (Int) -> Unit) {
         ClockStyle.RETRO -> if (p.dark) c(0xFF16120E) else p.surface
         ClockStyle.RADIO -> if (p.dark) c(0xFF2A2420) else p.surface2
         ClockStyle.TERMINAL -> p.bg
+        ClockStyle.CLASSIC -> p.surface
     }
     Column(Modifier.fillMaxWidth().background(barColor)) {
         val lineColor = when (db.style) {
@@ -270,6 +272,7 @@ private fun NavBar(selected: Int, onSelect: (Int) -> Unit) {
                             val pill = when (db.style) {
                                 ClockStyle.COLORS -> p.accent
                                 ClockStyle.RETRO -> androidx.compose.ui.graphics.Color.Transparent
+                                ClockStyle.CLASSIC -> p.surface2
                                 else -> p.accentSoft
                             }
                             val tint = when {
@@ -278,8 +281,10 @@ private fun NavBar(selected: Int, onSelect: (Int) -> Unit) {
                                 db.style == ClockStyle.STOCK -> p.link
                                 else -> p.accent
                             }
-                            var m = Modifier.size(60.dp, 32.dp).clip(RoundedCornerShape(if (db.style == ClockStyle.RETRO) 6.dp else 16.dp))
+                            val classic = db.style == ClockStyle.CLASSIC
+                            var m = Modifier.size(60.dp, 32.dp).clip(RoundedCornerShape(if (classic) 0.dp else if (db.style == ClockStyle.RETRO) 6.dp else 16.dp))
                             if (on) m = m.background(pill)
+                            if (classic) m = m.bevel(p.dark, sunken = on)
                             Box(m, contentAlignment = Alignment.Center) {
                                 Icon(item.icon, null, tint = tint, modifier = Modifier.size(22.dp))
                             }

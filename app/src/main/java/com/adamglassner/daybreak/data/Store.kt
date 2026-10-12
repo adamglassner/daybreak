@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class ClockStyle { STOCK, COLORS, RETRO, RADIO, TERMINAL }
+enum class ClockStyle { STOCK, COLORS, RETRO, RADIO, TERMINAL, CLASSIC }
 enum class ThemeMode { DARK, LIGHT, SYSTEM }
 
 /** Days use java.time.DayOfWeek numbering: 1 = Monday … 7 = Sunday. */
@@ -153,6 +153,71 @@ object Store {
             put("base", s.baseMs); put("startedAt", s.startedAt)
             put("laps", JSONArray().apply { s.laps.forEach { put(it) } })
         }.toString()).apply()
+    }
+
+    // ---------- backup & restore ----------
+    // A .json file shared with Daybreak Classic, so alarms can move between devices.
+
+    /** Everything worth keeping: alarms, bedtime and world clocks. */
+    fun exportBackup(appName: String): String = JSONObject().apply {
+        put("format", "daybreak-backup")
+        put("version", 1)
+        put("app", appName)
+        put("alarms", JSONArray(alarmsJson(_alarms.value)))
+        put("bedtime", JSONObject(settingsJson(_settings.value)).getJSONObject("bedtime"))
+        put("worldZones", JSONArray().apply { _settings.value.worldZones.forEach { put(it) } })
+    }.toString(2)
+
+    /** Counts the alarms in a backup, or returns -1 if the text isn't a Daybreak backup. */
+    fun backupAlarmCount(text: String): Int = runCatching {
+        JSONObject(text).getJSONArray("alarms").length()
+    }.getOrDefault(-1)
+
+    /**
+     * Restores a backup. [replace] swaps out the current alarms (and bedtime and world clocks);
+     * otherwise the backup's alarms are added. Returns how many alarms were added.
+     */
+    fun importBackup(text: String, replace: Boolean): Int {
+        val o = JSONObject(text)
+        val incoming = parseAlarms(o.getJSONArray("alarms").toString())
+        val keep = if (replace) emptyList() else _alarms.value
+        var nextId = (keep.maxOfOrNull { it.id } ?: 0) + 1
+        val added = incoming.map { a ->
+            a.copy(
+                id = nextId++,
+                hour = a.hour.coerceIn(0, 23),
+                minute = a.minute.coerceIn(0, 59),
+                snoozeMinutes = a.snoozeMinutes.coerceIn(1, 60),
+            )
+        }
+        val list = (keep + added).sortedWith(compareBy({ it.hour }, { it.minute }))
+        _alarms.value = list
+        prefs.edit().putString("alarms", alarmsJson(list)).apply()
+        if (replace) {
+            val b = o.optJSONObject("bedtime")
+            val zones = o.optJSONArray("worldZones")
+            updateSettings { s ->
+                var n = s
+                if (b != null) {
+                    n = n.copy(
+                        bedtime = Bedtime(
+                            enabled = b.optBoolean("enabled", false),
+                            bedHour = b.optInt("bedHour", 23).coerceIn(0, 23), bedMinute = b.optInt("bedMinute", 0).coerceIn(0, 59),
+                            wakeHour = b.optInt("wakeHour", 6).coerceIn(0, 23), wakeMinute = b.optInt("wakeMinute", 30).coerceIn(0, 59),
+                            remindMinutes = b.optInt("remind", 30),
+                            days = b.optJSONArray("days")?.let { parseDays(it) } ?: Bedtime().days,
+                            linkAlarm = false,
+                            linkedAlarmId = 0,
+                        ),
+                    )
+                }
+                if (zones != null && zones.length() > 0) {
+                    n = n.copy(worldZones = (0 until zones.length()).map { zones.getString(it) })
+                }
+                n
+            }
+        }
+        return added.size
     }
 
     // ---------- JSON ----------

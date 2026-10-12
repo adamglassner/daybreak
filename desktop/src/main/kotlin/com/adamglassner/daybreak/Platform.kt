@@ -105,6 +105,21 @@ object Platform {
         return File(dir, name)
     }
 
+    /** Native Save/Open dialog for a backup file. */
+    fun pickBackupFile(save: Boolean, suggestedName: String): File? {
+        val dialog = FileDialog(null as Frame?, if (save) "Back up alarms" else "Restore alarms", if (save) FileDialog.SAVE else FileDialog.LOAD)
+        if (save) dialog.file = suggestedName
+        else {
+            dialog.setFilenameFilter { _, name -> name.lowercase().endsWith(".json") }
+            if (isWindows) dialog.file = "*.json"
+        }
+        dialog.isVisible = true
+        val name = dialog.file ?: return null
+        val dir = dialog.directory ?: return null
+        val f = File(dir, name)
+        return if (save && !name.lowercase().endsWith(".json")) File(dir, "$name.json") else f
+    }
+
     val systemSoundsLabel: String get() = if (isWindows) "Windows sounds" else "System sounds"
 
     /** The system's own WAV sounds: C:\Windows\Media, or /usr/share/sounds on Linux. */

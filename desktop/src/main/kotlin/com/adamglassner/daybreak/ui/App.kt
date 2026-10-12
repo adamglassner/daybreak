@@ -143,8 +143,10 @@ fun App(ui: AppUi) {
             Row(Modifier.fillMaxSize()) {
                 NavPane(ui, settings.style)
                 // The content "layer", like Windows 11 apps: slightly raised, rounded top-left corner.
+                val classic = db.style == ClockStyle.CLASSIC
                 Box(
-                    Modifier.weight(1f).fillMaxHeight().padding(top = 0.dp)
+                    if (classic) Modifier.weight(1f).fillMaxHeight().background(p.bg).bevel(p.dark, sunken = true)
+                    else Modifier.weight(1f).fillMaxHeight().padding(top = 0.dp)
                         .clip(RoundedCornerShape(topStart = 8.dp))
                         .background(if (p.dark) Color.White.copy(alpha = 0.03f) else Color.White.copy(alpha = 0.5f))
                         .border(BorderStroke(1.dp, p.border), RoundedCornerShape(topStart = 8.dp)),
@@ -169,8 +171,11 @@ fun App(ui: AppUi) {
                 LaunchedEffect(n) { delay(3000); Notices.clear(n) }
                 Box(
                     Modifier.align(Alignment.BottomCenter).padding(bottom = 28.dp)
-                        .clip(RoundedCornerShape(8.dp)).background(p.surface)
-                        .border(BorderStroke(1.dp, p.border), RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(if (db.style == ClockStyle.CLASSIC) 0.dp else 8.dp)).background(p.surface)
+                        .then(
+                            if (db.style == ClockStyle.CLASSIC) Modifier.bevel(p.dark)
+                            else Modifier.border(BorderStroke(1.dp, p.border), RoundedCornerShape(8.dp)),
+                        )
                         .padding(horizontal = 18.dp, vertical = 12.dp),
                 ) {
                     DText(n.text, 14.sp, p.text)
@@ -213,8 +218,13 @@ private fun NavItem(page: Page, ui: AppUi) {
     val content: @Composable () -> Unit = {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp).height(38.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(if (selected || hovered) hoverTint() else Color.Transparent)
+                .clip(RoundedCornerShape(if (db.style == ClockStyle.CLASSIC) 0.dp else 4.dp))
+                .then(
+                    if (db.style == ClockStyle.CLASSIC) {
+                        if (selected) Modifier.background(p.surface2).bevel(p.dark, sunken = true)
+                        else if (hovered) Modifier.bevel(p.dark) else Modifier
+                    } else Modifier.background(if (selected || hovered) hoverTint() else Color.Transparent),
+                )
                 .hoverable(src)
                 .clickable(interactionSource = src, indication = null, role = Role.Tab) { ui.page = page }
                 .pointerHoverIcon(PointerIcon.Hand)

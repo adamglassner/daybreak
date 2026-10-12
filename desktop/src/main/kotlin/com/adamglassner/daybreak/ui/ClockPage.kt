@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -93,7 +94,11 @@ private fun HeroCard(settings: Settings) {
         FCard(Modifier.fillMaxWidth(), padding = 28.dp) { TerminalHero(settings.use24h, settings.showSeconds, 250.dp) }
         return
     }
-    FCard(Modifier.fillMaxWidth(), padding = 28.dp) {
+    val frame: @Composable (@Composable ColumnScope.() -> Unit) -> Unit = { body ->
+        if (db.style == ClockStyle.CLASSIC) ClassicWindow("Clock", Modifier.fillMaxWidth(), body)
+        else FCard(Modifier.fillMaxWidth(), padding = 28.dp, content = body)
+    }
+    frame {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             LiveAnalogClock(if (db.style == ClockStyle.RETRO) 240.dp else 280.dp)
             Spacer(Modifier.height(20.dp))

@@ -83,6 +83,27 @@ fun FButton(
     val p = LocalDb.current.p
     val src = remember { MutableInteractionSource() }
     val hovered by src.collectIsHoveredAsState()
+    if (LocalDb.current.style == ClockStyle.CLASSIC) {
+        // Windows 95-style push button: gray, beveled, a black frame on the default button.
+        Row(
+            modifier
+                .heightIn(min = 30.dp)
+                .then(if (accent) Modifier.border(BorderStroke(1.dp, if (p.dark) Color.White else Color.Black)) else Modifier)
+                .padding(if (accent) 1.dp else 0.dp)
+                .background(p.surface)
+                .bevel(p.dark)
+                .hoverable(src)
+                .clickable(interactionSource = src, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+                .padding(horizontal = 14.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        ) {
+            val fg = if (enabled) p.text else p.muted
+            if (icon != null) Icon(icon, null, tint = fg, modifier = Modifier.size(16.dp))
+            DText(text, 14.sp, fg, if (accent) FontWeight.Bold else FontWeight.Normal, family = FontFamilyForUi(), maxLines = 1)
+        }
+        return
+    }
     val shape = RoundedCornerShape(4.dp)
     val bg = when {
         !enabled -> p.surface2
@@ -157,6 +178,12 @@ fun FIconButton(icon: ImageVector, tooltip: String, modifier: Modifier = Modifie
 @Composable
 fun FToggle(checked: Boolean, onChange: (Boolean) -> Unit, description: String, enabled: Boolean = true) {
     val p = LocalDb.current.p
+    if (LocalDb.current.style == ClockStyle.CLASSIC) {
+        Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+            ClassicCheckbox(checked, { if (enabled) onChange(it) }, description)
+        }
+        return
+    }
     val knob by animateDpAsState(if (checked) 23.dp else 4.dp, label = "toggle")
     val shape = RoundedCornerShape(10.dp)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -193,7 +220,8 @@ fun FCard(
     val shape = RoundedCornerShape(db.radius)
     var m = modifier.clip(shape).background(color ?: p.surface)
     if (onClick != null && hovered) m = m.background(hoverTint())
-    m = m.border(BorderStroke(1.dp, if (db.style == ClockStyle.RADIO) p.panelBorder else p.border), shape)
+    m = if (db.style == ClockStyle.CLASSIC) m.bevel(p.dark)
+    else m.border(BorderStroke(1.dp, if (db.style == ClockStyle.RADIO) p.panelBorder else p.border), shape)
     if (onClick != null) {
         m = m.hoverable(src).clickable(interactionSource = src, indication = null, onClick = onClick).pointerHoverIcon(PointerIcon.Hand)
     }
@@ -243,6 +271,16 @@ fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 @Composable
 fun PageHeader(title: String, subtitle: String? = null, actions: @Composable RowScope.() -> Unit = {}) {
     val db = LocalDb.current
+    if (db.style == ClockStyle.CLASSIC) {
+        Column(Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 16.dp).background(db.p.surface).bevel(db.p.dark).padding(3.dp)) {
+            ClassicTitleBar("Daybreak - $title")
+            Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) { DText(subtitle ?: title, 14.sp, db.p.text) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, content = actions)
+            }
+        }
+        return
+    }
     Row(Modifier.fillMaxWidth().padding(top = 28.dp, bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             DText(
@@ -280,23 +318,26 @@ fun ContentDialog(
 ) {
     val db = LocalDb.current
     val p = db.p
+    val classic = db.style == ClockStyle.CLASSIC
+    val dShape = RoundedCornerShape(if (classic) 0.dp else 8.dp)
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f))
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (classic) 0.25f else 0.45f))
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onDismiss() },
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            Modifier.width(width).padding(24.dp).clip(RoundedCornerShape(8.dp)).background(p.surface)
-                .border(BorderStroke(1.dp, p.border), RoundedCornerShape(8.dp))
+            Modifier.width(width).padding(24.dp).clip(dShape).background(p.surface)
+                .then(if (classic) Modifier.bevel(p.dark).padding(3.dp) else Modifier.border(BorderStroke(1.dp, p.border), dShape))
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
         ) {
+            if (classic) ClassicTitleBar(title)
             val scroll = rememberScrollState()
-            Column(Modifier.heightIn(max = 560.dp).verticalScroll(scroll).padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                DText(title, 20.sp, p.text, FontWeight.SemiBold, family = db.f.display)
+            Column(Modifier.heightIn(max = 560.dp).verticalScroll(scroll).padding(if (classic) 16.dp else 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                if (!classic) DText(title, 20.sp, p.text, FontWeight.SemiBold, family = db.f.display)
                 content()
             }
             Row(
-                Modifier.fillMaxWidth().background(p.bg).padding(24.dp),
+                Modifier.fillMaxWidth().background(if (classic) p.surface else p.bg).padding(if (classic) 16.dp else 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -313,12 +354,13 @@ fun ContentDialog(
 @Composable
 fun ComboBox(value: String, options: List<String>, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
     val p = LocalDb.current.p
+    val classic = LocalDb.current.style == ClockStyle.CLASSIC
     var open by remember { mutableStateOf(false) }
     Box(modifier) {
-        val shape = RoundedCornerShape(4.dp)
+        val shape = RoundedCornerShape(if (classic) 0.dp else 4.dp)
         Row(
             Modifier.widthIn(min = 160.dp).heightIn(min = 32.dp).clip(shape).background(p.surface2)
-                .border(BorderStroke(1.dp, p.border), shape)
+                .then(if (classic) Modifier.bevel(p.dark, sunken = true) else Modifier.border(BorderStroke(1.dp, p.border), shape))
                 .clickable(role = Role.Button) { open = true }
                 .pointerHoverIcon(PointerIcon.Hand)
                 .padding(horizontal = 12.dp),
@@ -340,13 +382,18 @@ fun ComboBox(value: String, options: List<String>, modifier: Modifier = Modifier
 @Composable
 fun Segments(options: List<String>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
     val p = LocalDb.current.p
-    val shape = RoundedCornerShape(4.dp)
-    Row(modifier.clip(shape).border(BorderStroke(1.dp, p.border), shape).background(p.surface2)) {
+    val classic = LocalDb.current.style == ClockStyle.CLASSIC
+    val shape = RoundedCornerShape(if (classic) 0.dp else 4.dp)
+    Row(
+        if (classic) modifier.background(p.surface).padding(1.dp)
+        else modifier.clip(shape).border(BorderStroke(1.dp, p.border), shape).background(p.surface2),
+    ) {
         options.forEachIndexed { i, o ->
             val on = i == selected
             Box(
                 Modifier.weight(1f).heightIn(min = 32.dp)
                     .background(if (on) p.accent else Color.Transparent)
+                    .then(if (classic) Modifier.bevel(p.dark, sunken = on) else Modifier)
                     .clickable(role = Role.RadioButton) { onSelect(i) }
                     .pointerHoverIcon(PointerIcon.Hand)
                     .padding(horizontal = 10.dp),

@@ -55,6 +55,7 @@ fun SettingsPage(settings: Settings) {
     val scope = rememberCoroutineScope()
     val update by Updater.status.collectAsState()
     var addingCity by remember { mutableStateOf(false) }
+    var restoreText by remember { mutableStateOf<String?>(null) }
     var autostart by remember { mutableStateOf(Platform.isAutostartOn()) }
 
     ScrollPage(maxWidth = 1000.dp) {
@@ -130,6 +131,29 @@ fun SettingsPage(settings: Settings) {
             )
         }
 
+        SectionTitle("Backup")
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            SettingsCard("Back up alarms", "Saves alarms, bedtime and world clocks to a .json file", DbIcons.Download) {
+                FButton("Back up...") {
+                    val f = Platform.pickBackupFile(true, "daybreak-alarms-${java.time.LocalDate.now()}.json")
+                    if (f != null) {
+                        val ok = runCatching { f.writeText(Store.exportBackup("Daybreak $APP_VERSION for ${Platform.name}")) }.isSuccess
+                        Notices.show(if (ok) "Alarms backed up to ${f.name}" else "The backup couldn't be saved there")
+                    }
+                }
+            }
+            SettingsCard("Restore alarms", "From a Daybreak or Daybreak Classic backup (Daybreak Classic runs on Windows 95 to 11)", DbIcons.Alarm) {
+                FButton("Restore...") {
+                    val f = Platform.pickBackupFile(false, "")
+                    if (f != null) {
+                        val text = runCatching { f.readText() }.getOrNull()
+                        if (text == null || Store.backupAlarmCount(text) < 0) Notices.show("That doesn't look like a Daybreak backup")
+                        else restoreText = text
+                    }
+                }
+            }
+        }
+
         SectionTitle("Updates")
         val dl = update as? Updater.Status.Downloading
         val progressRow: (@Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit)? =
@@ -168,6 +192,33 @@ fun SettingsPage(settings: Settings) {
             DbIcons.Alarm,
         )
         Spacer(Modifier.width(1.dp))
+    }
+
+    restoreText?.let { text ->
+        val count = Store.backupAlarmCount(text)
+        ContentDialog(
+            title = "Restore $count alarm(s)?",
+            onDismiss = { restoreText = null },
+            primary = "Replace mine",
+            onPrimary = {
+                restoreText = null
+                com.adamglassner.daybreak.alarm.Scheduler.let { s -> Store.alarms.value.forEach { s.cancel(it.id) } }
+                val n = runCatching { Store.importBackup(text, true) }.getOrDefault(-1)
+                Notices.show(if (n >= 0) "Restored $n alarm(s)" else "That backup couldn't be read")
+            },
+            footerStart = {
+                FButton("Add to mine") {
+                    restoreText = null
+                    val n = runCatching { Store.importBackup(text, false) }.getOrDefault(-1)
+                    Notices.show(if (n >= 0) "Added $n alarm(s)" else "That backup couldn't be read")
+                }
+            },
+        ) {
+            DText(
+                "Replace your alarms with the ones in this backup (this also restores bedtime and world clocks), or add them to the alarms you have.",
+                14.sp, p.text,
+            )
+        }
     }
 
     if (addingCity) {
