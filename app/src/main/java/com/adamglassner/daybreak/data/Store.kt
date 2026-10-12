@@ -29,6 +29,21 @@ data class Alarm(
 
 data class City(val name: String, val region: String, val lat: Double, val lon: Double)
 
+/** A live radio station from the Radio Browser directory. */
+data class Station(
+    val uuid: String,
+    val name: String,
+    val url: String,
+    val country: String = "",
+    val countryCode: String = "",
+    val tags: String = "",
+    val codec: String = "",
+    val bitrate: Int = 0,
+    val favicon: String = "",
+)
+
+const val PRESET_COUNT = 6
+
 data class Bedtime(
     val enabled: Boolean = false,
     val bedHour: Int = 23,
@@ -53,6 +68,9 @@ data class Settings(
     val timerSoundUri: String? = null,
     val timerSoundName: String = "Default alarm",
     val bedtime: Bedtime = Bedtime(),
+    val radioStation: Station? = null,
+    val radioPresets: List<Station?> = List(PRESET_COUNT) { null },
+    val radioCountry: String = "",
 )
 
 data class TimerState(
@@ -196,7 +214,24 @@ object Store {
             put("wakeHour", b.wakeHour); put("wakeMinute", b.wakeMinute); put("remind", b.remindMinutes)
             put("days", daysJson(b.days)); put("link", b.linkAlarm); put("linkedId", b.linkedAlarmId)
         })
+        s.radioStation?.let { put("radioStation", stationJson(it)) }
+        put("radioPresets", JSONArray().apply { s.radioPresets.forEach { st -> put(st?.let { stationJson(it) } ?: JSONObject.NULL) } })
+        put("radioCountry", s.radioCountry)
     }.toString()
+
+    fun stationJson(st: Station): JSONObject = JSONObject().apply {
+        put("uuid", st.uuid); put("name", st.name); put("url", st.url); put("country", st.country)
+        put("countryCode", st.countryCode); put("tags", st.tags); put("codec", st.codec)
+        put("bitrate", st.bitrate); put("favicon", st.favicon)
+    }
+
+    fun parseStation(o: JSONObject?): Station? {
+        if (o == null || !o.has("url")) return null
+        return Station(
+            o.optString("uuid"), o.optString("name"), o.optString("url"), o.optString("country"),
+            o.optString("countryCode"), o.optString("tags"), o.optString("codec"), o.optInt("bitrate"), o.optString("favicon"),
+        )
+    }
 
     private fun parseSettings(s: String?): Settings {
         if (s.isNullOrEmpty()) return Settings()
@@ -227,6 +262,11 @@ object Store {
                 linkAlarm = b.optBoolean("link", false),
                 linkedAlarmId = b.optInt("linkedId", 0),
             ),
+            radioStation = parseStation(o.optJSONObject("radioStation")),
+            radioPresets = o.optJSONArray("radioPresets").let { a ->
+                List(PRESET_COUNT) { i -> if (a != null && i < a.length()) parseStation(a.optJSONObject(i)) else null }
+            },
+            radioCountry = o.optString("radioCountry", ""),
         )
     }
 

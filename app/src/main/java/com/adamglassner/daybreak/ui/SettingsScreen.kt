@@ -139,7 +139,7 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
         }
 
         DText(
-            "Daybreak 0.1 · Weather by Open-Meteo",
+            "Daybreak 0.2 · Weather by Open-Meteo · Radio by radio-browser.info",
             12.sp, p.muted, modifier = Modifier.fillMaxWidth().padding(top = 24.dp), align = TextAlign.Center,
         )
     }

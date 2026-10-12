@@ -149,6 +149,8 @@ fun ClockScreen(
     onRequestLocation: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAlarms: () -> Unit,
+    onOpenStations: () -> Unit = {},
+    showVolume: Boolean = false,
 ) {
     val db = LocalDb.current
     var weatherIndex by remember { mutableIntStateOf(0) }
@@ -158,6 +160,7 @@ fun ClockScreen(
 
     if (db.style == ClockStyle.RADIO) {
         RadioClock(settings, weather, onNextWeather = { weatherIndex++ }, onRequestLocation, onOpenSettings, onOpenAlarms,
+            onOpenStations, showVolume,
             onAddZone = { addingZone = true }, onRemoveZone = { removingZone = it })
     } else {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
@@ -408,6 +411,8 @@ private fun RadioClock(
     onRequestLocation: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAlarms: () -> Unit,
+    onOpenStations: () -> Unit,
+    showVolume: Boolean,
     onAddZone: () -> Unit,
     onRemoveZone: (String) -> Unit,
 ) {
@@ -460,6 +465,9 @@ private fun RadioClock(
             Box(Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(if (nextText != null) p.led else p.ledOff))
         }
 
+        Spacer(Modifier.height(4.dp))
+        TunerPanel(onOpenStations, showVolume)
+        Spacer(Modifier.height(4.dp))
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             LiveAnalogClock(132.dp)
             LedWindow(

@@ -164,7 +164,7 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
         }
 
         DText(
-            "Daybreak 1.0 for Windows · Weather by Open-Meteo",
+            "Daybreak 1.1 for Windows · Weather by Open-Meteo · Radio by radio-browser.info",
             12.sp, p.muted, modifier = Modifier.fillMaxWidth().padding(top = 24.dp), align = TextAlign.Center,
         )
     }

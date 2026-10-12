@@ -42,6 +42,7 @@ object AlarmService {
     @Synchronized
     fun ring(kind: String, id: Int, preview: Preview? = null) {
         stopPlayback()
+        com.adamglassner.daybreak.radio.Radio.stop() // the alarm takes over from the radio
         val settings = Store.settings.value
         val alarm = Store.alarm(id)
         val title: String

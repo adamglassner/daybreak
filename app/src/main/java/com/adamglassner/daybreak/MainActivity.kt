@@ -75,6 +75,7 @@ import com.adamglassner.daybreak.ui.DbIcons
 import com.adamglassner.daybreak.ui.Issue
 import com.adamglassner.daybreak.ui.LocalDb
 import com.adamglassner.daybreak.ui.SettingsScreen
+import com.adamglassner.daybreak.ui.StationsScreen
 import com.adamglassner.daybreak.ui.StopwatchScreen
 import com.adamglassner.daybreak.ui.TimerScreen
 import com.adamglassner.daybreak.ui.c
@@ -83,6 +84,7 @@ private sealed interface Overlay {
     data class EditAlarm(val id: Int?) : Overlay
     data object Bedtime : Overlay
     data object Settings : Overlay
+    data object Stations : Overlay
 }
 
 class MainActivity : ComponentActivity() {
@@ -124,6 +126,12 @@ private fun App(initialTab: Int) {
     val settings by Store.settings.collectAsState()
     var tab by rememberSaveable(initialTab) { mutableIntStateOf(initialTab) }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
+    LaunchedEffect(settings.style) {
+        if (settings.style != ClockStyle.RADIO) {
+            com.adamglassner.daybreak.radio.Radio.stop()
+            if (overlay == Overlay.Stations) overlay = null
+        }
+    }
 
     // Permission state, refreshed whenever the app comes back to the foreground.
     var refresh by remember { mutableIntStateOf(0) }
@@ -176,6 +184,7 @@ private fun App(initialTab: Int) {
                 when (o) {
                     is Overlay.EditAlarm -> AlarmEditScreen(o.id, settings) { overlay = null }
                     Overlay.Bedtime -> BedtimeScreen(settings) { overlay = null }
+                    Overlay.Stations -> StationsScreen { overlay = null }
                     Overlay.Settings -> SettingsScreen(settings, hasLocation, requestLocation) { overlay = null }
                 }
             }
@@ -188,7 +197,7 @@ private fun App(initialTab: Int) {
                     ),
                 ) {
                     when (tab) {
-                        0 -> ClockScreen(settings, hasLocation, requestLocation, { overlay = Overlay.Settings }, { tab = 1 })
+                        0 -> ClockScreen(settings, hasLocation, requestLocation, { overlay = Overlay.Settings }, { tab = 1 }, onOpenStations = { overlay = Overlay.Stations }, showVolume = false)
                         1 -> AlarmsScreen(settings, issues, { overlay = Overlay.EditAlarm(it) }, { overlay = Overlay.Bedtime }, { overlay = Overlay.Settings })
                         2 -> StopwatchScreen()
                         else -> TimerScreen(settings)

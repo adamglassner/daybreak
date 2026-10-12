@@ -20,6 +20,9 @@ import androidx.compose.ui.window.rememberWindowState
 import com.adamglassner.daybreak.alarm.AlarmService
 import com.adamglassner.daybreak.alarm.Scheduler
 import com.adamglassner.daybreak.data.Store
+import com.adamglassner.daybreak.radio.Radio
+import com.adamglassner.daybreak.radio.RadioBrowser
+import com.adamglassner.daybreak.radio.StreamRadioEngine
 import com.adamglassner.daybreak.ui.App
 import com.adamglassner.daybreak.ui.DaybreakTheme
 import com.adamglassner.daybreak.ui.RingScreen
@@ -47,6 +50,9 @@ fun main(args: Array<String>) {
     }
 
     Store.init(Platform.dataDir())
+    RadioBrowser.codecFilter = "MP3" // the Windows player handles MP3 streams
+    Radio.engine = StreamRadioEngine()
+    Radio.restoreLastStation()
     val startInTray = "--tray" in args
 
     application {
@@ -55,6 +61,7 @@ fun main(args: Array<String>) {
         val settings by Store.settings.collectAsState()
         val ringing by AlarmService.ringing.collectAsState()
         val requests by showRequests.collectAsState()
+        val radio by Radio.state.collectAsState()
         val icon = painterResource("icon.png")
 
         LaunchedEffect(requests) { if (requests > 0) visible = true }
@@ -69,9 +76,13 @@ fun main(args: Array<String>) {
             onAction = { visible = true },
             menu = {
                 Item("Open Daybreak", onClick = { visible = true })
+                if (radio.playing || radio.buffering) {
+                    Item("Stop radio (${radio.station?.name ?: ""})", onClick = { Radio.stop() })
+                }
                 Separator()
                 Item("Quit Daybreak", onClick = {
                     AlarmService.stop()
+                    Radio.stop()
                     exitApplication()
                 })
             },

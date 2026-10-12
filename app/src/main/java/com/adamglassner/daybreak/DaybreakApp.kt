@@ -4,11 +4,16 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import com.adamglassner.daybreak.data.Store
+import com.adamglassner.daybreak.radio.AndroidRadioEngine
+import com.adamglassner.daybreak.radio.Radio
 
 class DaybreakApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Store.init(this)
+        com.adamglassner.daybreak.ui.Notices.init(this)
+        Radio.engine = AndroidRadioEngine(this)
+        Radio.restoreLastStation()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_ALARM, "Alarms and timers", NotificationManager.IMPORTANCE_HIGH).apply {

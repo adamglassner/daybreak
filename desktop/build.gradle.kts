@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.adamglassner"
-version = "1.0.0"
+version = "1.1.0"
 
 dependencies {
     implementation(compose.desktop.currentOs)
@@ -28,7 +28,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
             packageName = "Daybreak"
-            packageVersion = "1.0.0"
+            packageVersion = "1.1.0"
             description = "Daybreak alarm clock"
             vendor = "Adam Glassner"
             copyright = "© 2026 Adam Glassner"

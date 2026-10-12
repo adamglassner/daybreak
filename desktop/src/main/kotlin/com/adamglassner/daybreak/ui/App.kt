@@ -60,6 +60,7 @@ private sealed interface Overlay {
     data class EditAlarm(val id: Int?) : Overlay
     data object Bedtime : Overlay
     data object Settings : Overlay
+    data object Stations : Overlay
 }
 
 @Composable
@@ -69,6 +70,12 @@ fun App() {
     val settings by Store.settings.collectAsState()
     var tab by remember { mutableIntStateOf(0) }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
+    LaunchedEffect(settings.style) {
+        if (settings.style != ClockStyle.RADIO) {
+            com.adamglassner.daybreak.radio.Radio.stop()
+            if (overlay == Overlay.Stations) overlay = null
+        }
+    }
     val notice by Notices.current.collectAsState()
 
     Box(Modifier.fillMaxSize().background(p.bg)) {
@@ -78,6 +85,7 @@ fun App() {
                 when (o) {
                     is Overlay.EditAlarm -> AlarmEditScreen(o.id, settings) { overlay = null }
                     Overlay.Bedtime -> BedtimeScreen(settings) { overlay = null }
+                    Overlay.Stations -> StationsScreen { overlay = null }
                     Overlay.Settings -> SettingsScreen(settings, true, {}) { overlay = null }
                 }
             }
@@ -85,7 +93,7 @@ fun App() {
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when (tab) {
-                        0 -> ClockScreen(settings, true, {}, { overlay = Overlay.Settings }, { tab = 1 })
+                        0 -> ClockScreen(settings, true, {}, { overlay = Overlay.Settings }, { tab = 1 }, onOpenStations = { overlay = Overlay.Stations }, showVolume = true)
                         1 -> AlarmsScreen(settings, emptyList(), { overlay = Overlay.EditAlarm(it) }, { overlay = Overlay.Bedtime }, { overlay = Overlay.Settings })
                         2 -> StopwatchScreen()
                         else -> TimerScreen(settings)

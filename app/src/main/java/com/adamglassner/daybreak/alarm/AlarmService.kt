@@ -75,6 +75,21 @@ class AlarmService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var rampStart = 0L
     private var rampMs = 0L
+    private var focus: android.media.AudioFocusRequest? = null
+
+    private fun takeFocus() {
+        val attrs = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+        val req = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(attrs).setOnAudioFocusChangeListener { }.build()
+        runCatching { getSystemService(android.media.AudioManager::class.java).requestAudioFocus(req) }
+        focus = req
+    }
+
+    private fun dropFocus() {
+        focus?.let { f -> runCatching { getSystemService(android.media.AudioManager::class.java).abandonAudioFocusRequest(f) } }
+        focus = null
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -140,6 +155,7 @@ class AlarmService : Service() {
         val pm = getSystemService(PowerManager::class.java)
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "daybreak:ring").apply { acquire(AUTO_STOP_MS + 5_000) }
 
+        takeFocus()
         startPlayer(soundUri, if (gradual) 0.02f else 1f)
         if (vibrate) startVibration()
         if (gradual) {
@@ -237,6 +253,7 @@ class AlarmService : Service() {
         vibrator = null
         runCatching { if (wakeLock?.isHeld == true) wakeLock?.release() }
         wakeLock = null
+        dropFocus()
     }
 
     private fun finish() {
