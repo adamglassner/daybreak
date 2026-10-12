@@ -26,7 +26,7 @@ object Platform {
     /** The installed launcher (Daybreak.exe or /opt/daybreak/bin/Daybreak); null in a dev build. */
     private val appExe: String? get() = System.getProperty("jpackage.app-path")
 
-    /** The app icon installed with the Linux package (…/lib/*.png), for notifications and autostart. */
+    /** The app icon installed with the Linux package (a PNG in its lib folder), for notifications and autostart. */
     private val linuxIcon: String by lazy {
         appExe?.let { File(it).parentFile?.parentFile?.let { root -> File(root, "lib") } }
             ?.listFiles { f -> f.extension.equals("png", true) }?.firstOrNull()?.absolutePath ?: "alarm-clock"
