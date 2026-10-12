@@ -1,0 +1,72 @@
+name: Build Linux packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - "version.properties"
+      - ".github/workflows/linux.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # An older Ubuntu keeps the packages compatible with more distributions.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Packaging tools
+        run: sudo apt-get update -q && sudo apt-get install -y -q rpm fakeroot
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+
+      - name: Read version
+        run: echo "V=$(grep '^version=' version.properties | cut -d= -f2 | tr -d '[:space:]')" >> "$GITHUB_ENV"
+
+      - name: Build packages
+        run: gradle -p desktop packageDeb packageRpm --no-daemon --stacktrace
+
+      - name: Collect
+        run: |
+          mkdir out
+          cp desktop/build/compose/binaries/main/deb/*.deb "out/daybreak_${V}_amd64.deb"
+          cp desktop/build/compose/binaries/main/rpm/*.rpm "out/daybreak-${V}.x86_64.rpm"
+          ls -la out
+          dpkg-deb --info "out/daybreak_${V}_amd64.deb"
+          rpm -qip "out/daybreak-${V}.x86_64.rpm"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Daybreak-linux
+          path: out/
+
+      # One release per version (linux-v1.4.0, …). The app's update button reads these.
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete "linux-v$V" --yes --cleanup-tag || true
+          gh release create "linux-v$V" "out/daybreak_${V}_amd64.deb" "out/daybreak-${V}.x86_64.rpm" --latest=false \
+            --title "Daybreak $V for Linux" \
+            --notes "Built from ${GITHUB_SHA::7}. Ubuntu, Debian, Mint: daybreak_${V}_amd64.deb. Fedora, openSUSE, RHEL: daybreak-${V}.x86_64.rpm."
+
+      - name: Save to builds-linux branch
+        run: |
+          cd out
+          git init -q -b builds-linux
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add .
+          git commit -q -m "Linux packages $V from ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds-linux

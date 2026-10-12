@@ -262,7 +262,7 @@ fun BedtimeDialog(settings: Settings, onClose: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 DText("Bedtime reminder", 14.sp, p.text)
-                DText("A Windows notification when it's time to wind down", 12.sp, p.muted)
+                DText("A notification when it's time to wind down", 12.sp, p.muted)
             }
             FToggle(b.enabled, { b = b.copy(enabled = it) }, "Bedtime reminder")
         }

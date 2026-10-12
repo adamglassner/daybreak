@@ -109,19 +109,19 @@ fun main(args: Array<String>) {
         val icon = painterResource("icon.png")
 
         LaunchedEffect(requests) { if (requests > 0) visible = true }
-        LaunchedEffect(Unit) {
-            Scheduler.loop { title, text -> trayState.sendNotification(Notification(title, text, Notification.Type.Info)) }
+        val notify: (String, String) -> Unit = { title, text ->
+            if (Platform.hasTray) trayState.sendNotification(Notification(title, text, Notification.Type.Info))
+            else Platform.notifyDesktop(title, text)
         }
+        LaunchedEffect(Unit) { Scheduler.loop(notify) }
         LaunchedEffect(Unit) {
             val st = checkForUpdate()
             if (st is Updater.Status.Available) {
-                trayState.sendNotification(
-                    Notification("Daybreak ${st.release.version} is available", "Open Settings in Daybreak to download and install it.", Notification.Type.Info),
-                )
+                notify("Daybreak ${st.release.version} is available", "Open Settings in Daybreak to download and install it.")
             }
         }
 
-        Tray(
+        if (Platform.hasTray) Tray(
             icon = icon,
             state = trayState,
             tooltip = "Daybreak",
@@ -151,14 +151,15 @@ fun main(args: Array<String>) {
 
         if (visible) {
             Window(
-                onCloseRequest = { visible = false },
+                // With a tray icon, closing hides to the tray; without one (some Linux desktops), it minimizes.
+                onCloseRequest = { if (Platform.hasTray) visible = false else mainState.isMinimized = true },
                 state = mainState,
                 title = "Daybreak",
                 icon = icon,
                 onPreviewKeyEvent = { ui.onKey(it) },
             ) {
                 LaunchedEffect(Unit) { window.minimumSize = Dimension(720, 540) }
-                LaunchedEffect(requests) { window.toFront() }
+                LaunchedEffect(requests) { mainState.isMinimized = false; window.toFront() }
                 DaybreakTheme(settings.style, settings.mode) { App(ui) }
             }
         }

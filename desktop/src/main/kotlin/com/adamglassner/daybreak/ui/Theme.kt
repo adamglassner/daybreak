@@ -137,7 +137,8 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
         )
     }
     val f = when (style) {
-        ClockStyle.STOCK -> Fonts(FontFamily.Default, FontFamily.Default, FontWeight.SemiBold, false) // Segoe UI on Windows
+        ClockStyle.STOCK -> if (com.adamglassner.daybreak.Platform.isWindows) Fonts(FontFamily.Default, FontFamily.Default, FontWeight.SemiBold, false) // Segoe UI
+            else Fonts(Figtree, Figtree, FontWeight.SemiBold, false)
         ClockStyle.COLORS -> Fonts(Fredoka, Figtree, FontWeight.Bold, false)
         ClockStyle.RETRO -> Fonts(Bebas, SpaceMono, FontWeight.Bold, true)
         ClockStyle.RADIO -> Fonts(Archivo, Archivo, FontWeight.Bold, true)

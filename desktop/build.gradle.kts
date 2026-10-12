@@ -31,7 +31,7 @@ compose.desktop {
         mainClass = "com.adamglassner.daybreak.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Exe, TargetFormat.Msi)
+            targetFormats(TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "Daybreak"
             packageVersion = appVersion
             description = "Daybreak alarm clock"
@@ -48,6 +48,19 @@ compose.desktop {
                 perUserInstall = true
                 // Keep this constant so new versions upgrade the installed one.
                 upgradeUuid = "6f0b5a9e-2c1d-4e8a-9b7f-3d5c1e2a4b60"
+            }
+
+            linux {
+                packageName = "daybreak"
+                iconFile.set(project.file("icons/daybreak.png"))
+                shortcut = true
+                menuGroup = "Utility"
+                appCategory = "Utility"
+                debMaintainer = "adamglassner@users.noreply.github.com"
+                appRelease = "1"
+                debPackageVersion = appVersion
+                rpmPackageVersion = appVersion
+                rpmLicenseType = "Proprietary"
             }
         }
     }

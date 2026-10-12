@@ -221,7 +221,7 @@ fun SoundPicker(title: String, name: String, onPicked: (String?, String) -> Unit
                     open = false; onPicked(null, "Default alarm")
                 })
                 if (Platform.systemSounds().isNotEmpty()) {
-                    DropdownMenuItem(text = { DText("Windows sounds…", 15.sp) }, onClick = { open = false; listing = true })
+                    DropdownMenuItem(text = { DText("${Platform.systemSoundsLabel}…", 15.sp) }, onClick = { open = false; listing = true })
                 }
                 DropdownMenuItem(text = { DText("A song or sound file (MP3, WAV)…", 15.sp) }, onClick = {
                     open = false
@@ -239,7 +239,7 @@ fun SoundPicker(title: String, name: String, onPicked: (String?, String) -> Unit
         AlertDialog(
             onDismissRequest = { listing = false },
             containerColor = p.surface,
-            title = { DText("Windows sounds", 20.sp, weight = FontWeight.Bold) },
+            title = { DText(Platform.systemSoundsLabel, 20.sp, weight = FontWeight.Bold) },
             text = {
                 LazyColumn(Modifier.heightIn(max = 360.dp)) {
                     items(Platform.systemSounds()) { f ->

@@ -2,37 +2,97 @@ package com.adamglassner.daybreak
 
 import java.awt.FileDialog
 import java.awt.Frame
+import java.awt.SystemTray
 import java.io.File
 import java.util.concurrent.TimeUnit
 
+/** Everything that differs between Windows and Linux lives here. */
 object Platform {
-    val isWindows = System.getProperty("os.name").lowercase().contains("win")
+    private val os = System.getProperty("os.name").lowercase()
+    val isWindows = os.contains("win")
+    val isLinux = os.contains("linux")
+
+    /** "Windows" or "Linux", for labels. */
+    val name: String get() = if (isWindows) "Windows" else "Linux"
 
     fun dataDir(): File {
-        val base = System.getenv("APPDATA")?.let { File(it) } ?: File(System.getProperty("user.home"), ".config")
+        val base = when {
+            isWindows -> System.getenv("APPDATA")?.let { File(it) }
+            else -> System.getenv("XDG_CONFIG_HOME")?.takeIf { it.isNotBlank() }?.let { File(it) }
+        } ?: File(System.getProperty("user.home"), ".config")
         return File(base, "Daybreak").apply { mkdirs() }
     }
 
-    /** The installed Daybreak.exe, when running from the installer (not from a dev build). */
+    /** The installed launcher (Daybreak.exe or /opt/daybreak/bin/Daybreak); null in a dev build. */
     private val appExe: String? get() = System.getProperty("jpackage.app-path")
 
+    /** The app icon installed with the Linux package (…/lib/*.png), for notifications and autostart. */
+    private val linuxIcon: String by lazy {
+        appExe?.let { File(it).parentFile?.parentFile?.let { root -> File(root, "lib") } }
+            ?.listFiles { f -> f.extension.equals("png", true) }?.firstOrNull()?.absolutePath ?: "alarm-clock"
+    }
+
+    /** Whether there's a notification-area icon to fall back on when the window closes. */
+    val hasTray: Boolean by lazy { runCatching { SystemTray.isSupported() }.getOrDefault(false) }
+
+    // ---------- start at sign-in ----------
+
     private const val RUN_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+    private val autostartFile: File
+        get() {
+            val config = System.getenv("XDG_CONFIG_HOME")?.takeIf { it.isNotBlank() }?.let { File(it) }
+                ?: File(System.getProperty("user.home"), ".config")
+            return File(config, "autostart/daybreak.desktop")
+        }
 
-    val canAutostart: Boolean get() = isWindows && appExe != null
+    val canAutostart: Boolean get() = appExe != null && (isWindows || isLinux)
 
-    private fun reg(vararg args: String): Int = runCatching {
-        val p = ProcessBuilder(listOf("reg") + args).redirectErrorStream(true).start()
+    private fun run(vararg cmd: String): Int = runCatching {
+        val p = ProcessBuilder(*cmd).redirectErrorStream(true).start()
         p.inputStream.readAllBytes()
         if (p.waitFor(10, TimeUnit.SECONDS)) p.exitValue() else -1
     }.getOrDefault(-1)
 
-    fun isAutostartOn(): Boolean = canAutostart && reg("query", RUN_KEY, "/v", "Daybreak") == 0
+    fun isAutostartOn(): Boolean = when {
+        !canAutostart -> false
+        isWindows -> run("reg", "query", RUN_KEY, "/v", "Daybreak") == 0
+        else -> autostartFile.isFile
+    }
 
     fun setAutostart(on: Boolean) {
         val exe = appExe ?: return
-        if (on) reg("add", RUN_KEY, "/v", "Daybreak", "/t", "REG_SZ", "/d", "\"$exe\" --tray", "/f")
-        else reg("delete", RUN_KEY, "/v", "Daybreak", "/f")
+        if (isWindows) {
+            if (on) run("reg", "add", RUN_KEY, "/v", "Daybreak", "/t", "REG_SZ", "/d", "\"$exe\" --tray", "/f")
+            else run("reg", "delete", RUN_KEY, "/v", "Daybreak", "/f")
+        } else {
+            val f = autostartFile
+            if (on) {
+                runCatching {
+                    f.parentFile.mkdirs()
+                    f.writeText(
+                        """
+                        [Desktop Entry]
+                        Type=Application
+                        Name=Daybreak
+                        Comment=Alarm clock
+                        Exec="$exe" --tray
+                        Icon=$linuxIcon
+                        X-GNOME-Autostart-enabled=true
+                        """.trimIndent() + "\n",
+                    )
+                }
+            } else {
+                f.delete()
+            }
+        }
     }
+
+    // ---------- notifications (Linux without a tray icon) ----------
+
+    fun notifyDesktop(title: String, text: String): Boolean =
+        isLinux && run("notify-send", "--app-name=Daybreak", "--icon=$linuxIcon", title, text) == 0
+
+    // ---------- sounds ----------
 
     /** Native "Open" dialog for an audio file. Returns the chosen path or null. */
     fun pickAudioFile(): File? {
@@ -45,11 +105,45 @@ object Platform {
         return File(dir, name)
     }
 
-    /** Windows' own alarm and notification sounds (C:\Windows\Media). */
+    val systemSoundsLabel: String get() = if (isWindows) "Windows sounds" else "System sounds"
+
+    /** The system's own WAV sounds: C:\Windows\Media, or /usr/share/sounds on Linux. */
     fun systemSounds(): List<File> {
-        val media = File(System.getenv("WINDIR") ?: "C:\\Windows", "Media")
-        return media.listFiles { f -> f.isFile && f.extension.equals("wav", true) }
-            ?.sortedWith(compareBy({ !it.name.startsWith("Alarm", true) }, { it.name.lowercase() }))
-            ?: emptyList()
+        if (isWindows) {
+            val media = File(System.getenv("WINDIR") ?: "C:\\Windows", "Media")
+            return media.listFiles { f -> f.isFile && f.extension.equals("wav", true) }
+                ?.sortedWith(compareBy({ !it.name.startsWith("Alarm", true) }, { it.name.lowercase() }))
+                ?: emptyList()
+        }
+        val root = File("/usr/share/sounds")
+        if (!root.isDirectory) return emptyList()
+        return root.walkTopDown().maxDepth(4)
+            .filter { it.isFile && it.extension.equals("wav", true) }
+            .take(200)
+            .sortedWith(compareBy({ !it.name.contains("alarm", true) }, { it.name.lowercase() }))
+            .toList()
+    }
+
+    // ---------- updates ----------
+
+    /** Which package this machine uses: ".exe" on Windows, ".deb" on Debian/Ubuntu, ".rpm" otherwise. */
+    val updateAsset: String by lazy {
+        when {
+            isWindows -> ".exe"
+            File("/etc/debian_version").exists() || File("/usr/bin/dpkg").exists() -> ".deb"
+            else -> ".rpm"
+        }
+    }
+    val updateTagPrefix: String get() = if (isWindows) "windows-v" else "linux-v"
+
+    /** Starts installing a downloaded update. Returns true if Daybreak should quit now. */
+    fun openInstaller(file: File): Boolean {
+        if (isWindows) {
+            ProcessBuilder(file.absolutePath).start()
+            return true
+        }
+        // Hand the package to the desktop's software installer (GNOME Software, Discover, …).
+        ProcessBuilder("xdg-open", file.absolutePath).start()
+        return false
     }
 }

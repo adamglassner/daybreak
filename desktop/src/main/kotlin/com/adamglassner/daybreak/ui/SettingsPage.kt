@@ -36,13 +36,13 @@ val APP_VERSION: String by lazy {
     }.getOrNull()?.takeIf { it.isNotBlank() && !it.startsWith("$") } ?: "dev"
 }
 
-suspend fun checkForUpdate() = Updater.check(APP_VERSION, "windows-v", ".exe")
+suspend fun checkForUpdate() = Updater.check(APP_VERSION, Platform.updateTagPrefix, Platform.updateAsset)
 
 /** Runs a downloaded installer and closes Daybreak so it can be replaced. */
 fun installUpdate(file: File) {
-    runCatching { ProcessBuilder(file.absolutePath).start() }
-        .onSuccess { DesktopApp.exit() }
-        .onFailure { Notices.show("Couldn't start the installer") }
+    runCatching { Platform.openInstaller(file) }
+        .onSuccess { quit -> if (quit) DesktopApp.exit() else Notices.show("Finish the install, then restart Daybreak") }
+        .onFailure { Notices.show("Couldn't start the installer. The package is in ${file.parent}") }
 }
 
 object DesktopApp {
@@ -69,7 +69,7 @@ fun SettingsPage(settings: Settings) {
                     }
                 }
             })
-            SettingsCard("App theme", "Light, dark, or follow Windows", DbIcons.Sun) {
+            SettingsCard("App theme", "Light, dark, or follow your system setting", DbIcons.Sun) {
                 val modes = listOf(ThemeMode.LIGHT to "Light", ThemeMode.DARK to "Dark", ThemeMode.SYSTEM to "Use system setting")
                 ComboBox(modes.first { it.first == settings.mode }.second, modes.map { it.second }) { i ->
                     Store.updateSettings { it.copy(mode = modes[i].first) }
@@ -112,19 +112,20 @@ fun SettingsPage(settings: Settings) {
             })
         }
 
-        SectionTitle("Windows")
+        SectionTitle(Platform.name)
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SettingsCard(
-                "Start with Windows",
-                if (Platform.canAutostart) "Opens quietly in the notification area when you sign in, so alarms are always ready"
+                if (Platform.isWindows) "Start with Windows" else "Start when I sign in",
+                if (Platform.canAutostart) "Opens quietly in the background when you sign in, so alarms are always ready"
                 else "Available in the installed app",
                 DbIcons.Bell,
             ) {
-                FToggle(autostart, { v -> Platform.setAutostart(v); autostart = Platform.isAutostartOn() }, "Start with Windows", enabled = Platform.canAutostart)
+                FToggle(autostart, { v -> Platform.setAutostart(v); autostart = Platform.isAutostartOn() }, "Start when I sign in", enabled = Platform.canAutostart)
             }
             SettingsCard(
                 "Closing the window",
-                "Daybreak keeps running in the notification area so alarms still ring. To exit, right-click its icon and choose Quit. A sleeping PC can't ring an alarm.",
+                if (Platform.hasTray) "Daybreak keeps running in the notification area so alarms still ring. To exit, right-click its icon and choose Quit. A sleeping PC can't ring an alarm."
+                else "Closing minimizes Daybreak so alarms still ring. A sleeping PC can't ring an alarm.",
                 DbIcons.Close,
             )
         }
@@ -141,7 +142,7 @@ fun SettingsPage(settings: Settings) {
                 Updater.Status.UpToDate -> "You're up to date"
                 is Updater.Status.Available -> "Version ${s.release.version} is available"
                 is Updater.Status.Downloading -> "Downloading version ${s.release.version}… ${(s.progress * 100).toInt()}%"
-                is Updater.Status.Ready -> "Version ${s.release.version} is ready to install. Daybreak will close and reopen after setup."
+                is Updater.Status.Ready -> "Version ${s.release.version} is ready to install."
                 is Updater.Status.Failed -> s.message
             },
             DbIcons.Download,
@@ -162,7 +163,7 @@ fun SettingsPage(settings: Settings) {
 
         SectionTitle("About")
         SettingsCard(
-            "Daybreak for Windows",
+            "Daybreak for ${Platform.name}",
             "Version $APP_VERSION · Weather by Open-Meteo · Radio by radio-browser.info · Keyboard: Ctrl+1–5 switch pages, Ctrl+N new alarm, Ctrl+, settings, Esc closes dialogs",
             DbIcons.Alarm,
         )

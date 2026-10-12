@@ -18,6 +18,15 @@ The `desktop/` folder holds Daybreak for Windows. Every change there builds an i
 
 To build it yourself on Windows with JDK 17: `gradle -p desktop packageExe`.
 
+## Linux
+
+Every change to `desktop/` also builds Linux packages. Get them from the **Releases** page ("Daybreak for Linux"):
+
+- Ubuntu, Debian, Mint, Pop!_OS: `sudo apt install ./daybreak_<version>_amd64.deb`
+- Fedora, RHEL, openSUSE: `sudo dnf install ./daybreak-<version>.x86_64.rpm`
+
+Daybreak appears in your app menu under Utilities.
+
 ## Building locally
 
 Requires JDK 17 and the Android SDK (API 35):
