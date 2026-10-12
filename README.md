@@ -12,6 +12,12 @@ An alarm clock app for Android.
 
 Every push to `main` builds the app on GitHub Actions. Open the **Actions** tab, pick the latest run, and download **Daybreak-apk** under Artifacts.
 
+## Windows
+
+The `desktop/` folder holds Daybreak for Windows. Every change there builds an installer; get **Daybreak-Setup.exe** from the **Releases** page (the "Daybreak for Windows" release). It runs in the system tray so alarms ring while the window is closed, and can start with Windows (Settings → Windows).
+
+To build it yourself on Windows with JDK 17: `gradle -p desktop packageExe`.
+
 ## Building locally
 
 Requires JDK 17 and the Android SDK (API 35):
