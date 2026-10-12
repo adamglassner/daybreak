@@ -32,7 +32,10 @@ jobs:
         run: echo "V=$(grep '^version=' version.properties | cut -d= -f2 | tr -d '[:space:]')" >> "$GITHUB_ENV"
 
       - name: Build installer
-        run: gradle -p desktop packageExe packageMsi --no-daemon --stacktrace
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle -p desktop packageExe packageMsi --no-daemon --stacktrace 2>&1 | tee build.log
 
       - name: Collect
         shell: bash
@@ -69,3 +72,16 @@ jobs:
           git add "Daybreak-Setup-$V.exe"
           git commit -q -m "Installer $V from ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds-windows
+
+      # If the build fails, keep its log on a branch so it can be read without GitHub's log storage.
+      - name: Save failure log
+        if: failure()
+        shell: bash
+        run: |
+          mkdir faillog && cp build.log faillog/ 2>/dev/null || echo "no log" > faillog/build.log
+          cd faillog
+          git init -q -b ci-log-windows
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add . && git commit -q -m "Failed build log"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-log-windows
