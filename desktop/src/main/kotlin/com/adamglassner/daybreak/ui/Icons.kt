@@ -43,6 +43,12 @@ object DbIcons {
     val Close = icon("close", "M6 6l12 12M18 6L6 18")
     val Trash = icon("trash", "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13")
     val Play = icon("play", "M7 4l12 8-12 8z")
+    val Radio = icon("radio", "M3 9h18v11H3z", "M7 9l10-5", circle(15.5f, 14.5f, 2.5f), "M6.5 12.5h4M6.5 16.5h4")
+    val Up = icon("up", "M6 15l6-6 6 6", width = 2.2f)
+    val Down = icon("down", "M6 9l6 6 6-6", width = 2.2f)
+    val Menu = icon("menu", "M4 6h16M4 12h16M4 18h16")
+    val Edit = icon("edit", "M4 20h4L19 9l-4-4L4 16z", "M13.5 6.5l4 4")
+    val Download = icon("download", "M12 4v11M7 10l5 5 5-5M5 20h14")
     val Bell = icon("bell", "M6 16V11a6 6 0 0 1 12 0v5l2 2H4z", "M10 21h4")
 
     private const val CLOUD_HI = "M7 16h10a4 4 0 0 0 0-8 6 6 0 0 0-11.6 1.8A3.2 3.2 0 0 0 7 16z"

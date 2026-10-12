@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
@@ -13,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Notification
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberTrayState
@@ -23,18 +25,54 @@ import com.adamglassner.daybreak.data.Store
 import com.adamglassner.daybreak.radio.Radio
 import com.adamglassner.daybreak.radio.RadioBrowser
 import com.adamglassner.daybreak.radio.StreamRadioEngine
+import com.adamglassner.daybreak.ui.AlarmEdit
 import com.adamglassner.daybreak.ui.App
+import com.adamglassner.daybreak.ui.AppUi
 import com.adamglassner.daybreak.ui.DaybreakTheme
-import com.adamglassner.daybreak.ui.RingScreen
+import com.adamglassner.daybreak.ui.DesktopApp
+import com.adamglassner.daybreak.ui.Page
+import com.adamglassner.daybreak.ui.RingToast
+import com.adamglassner.daybreak.ui.checkForUpdate
+import com.adamglassner.daybreak.update.Updater
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
 import java.awt.Dimension
+import java.awt.GraphicsEnvironment
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
 private const val INSTANCE_PORT = 47821
 
+/** Remembers where the window was and how big, like other Windows apps. */
+private object WindowMemory {
+    private val prefs = Preferences.userRoot().node("com/adamglassner/daybreak")
+
+    data class Saved(val size: DpSize, val position: WindowPosition, val maximized: Boolean)
+
+    fun load(): Saved {
+        val w = prefs.getFloat("w", 1100f)
+        val h = prefs.getFloat("h", 740f)
+        val x = prefs.getFloat("x", Float.NaN)
+        val y = prefs.getFloat("y", Float.NaN)
+        val pos = if (x.isNaN() || y.isNaN()) WindowPosition(Alignment.Center) else WindowPosition(x.dp, y.dp)
+        return Saved(DpSize(w.dp, h.dp), pos, prefs.getBoolean("max", false))
+    }
+
+    fun save(size: DpSize, pos: WindowPosition, max: Boolean) {
+        runCatching {
+            prefs.putBoolean("max", max)
+            if (max) return
+            if (size.width.value > 0) { prefs.putFloat("w", size.width.value); prefs.putFloat("h", size.height.value) }
+            if (pos is WindowPosition.Absolute) { prefs.putFloat("x", pos.x.value); prefs.putFloat("y", pos.y.value) }
+        }
+    }
+}
+
+@OptIn(FlowPreview::class)
 fun main(args: Array<String>) {
     // Only one Daybreak at a time (two would ring every alarm twice).
     // A second launch asks the running one to show its window, then exits.
@@ -54,8 +92,14 @@ fun main(args: Array<String>) {
     Radio.engine = StreamRadioEngine()
     Radio.restoreLastStation()
     val startInTray = "--tray" in args
+    val ui = AppUi()
 
     application {
+        DesktopApp.exit = {
+            AlarmService.stop()
+            Radio.stop()
+            exitApplication()
+        }
         var visible by remember { mutableStateOf(!startInTray) }
         val trayState = rememberTrayState()
         val settings by Store.settings.collectAsState()
@@ -68,6 +112,14 @@ fun main(args: Array<String>) {
         LaunchedEffect(Unit) {
             Scheduler.loop { title, text -> trayState.sendNotification(Notification(title, text, Notification.Type.Info)) }
         }
+        LaunchedEffect(Unit) {
+            val st = checkForUpdate()
+            if (st is Updater.Status.Available) {
+                trayState.sendNotification(
+                    Notification("Daybreak ${st.release.version} is available", "Open Settings in Daybreak to download and install it.", Notification.Type.Info),
+                )
+            }
+        }
 
         Tray(
             icon = icon,
@@ -76,47 +128,65 @@ fun main(args: Array<String>) {
             onAction = { visible = true },
             menu = {
                 Item("Open Daybreak", onClick = { visible = true })
+                Item("New alarm", onClick = { visible = true; ui.page = Page.ALARMS; ui.alarmDialog = AlarmEdit(null) })
                 if (radio.playing || radio.buffering) {
                     Item("Stop radio (${radio.station?.name ?: ""})", onClick = { Radio.stop() })
                 }
                 Separator()
-                Item("Quit Daybreak", onClick = {
-                    AlarmService.stop()
-                    Radio.stop()
-                    exitApplication()
-                })
+                Item("Quit Daybreak", onClick = { DesktopApp.exit() })
             },
         )
 
-        val mainState = rememberWindowState(size = DpSize(440.dp, 880.dp), position = WindowPosition(Alignment.Center))
+        val saved = remember { WindowMemory.load() }
+        val mainState = rememberWindowState(
+            size = saved.size,
+            position = saved.position,
+            placement = if (saved.maximized) WindowPlacement.Maximized else WindowPlacement.Floating,
+        )
+        LaunchedEffect(mainState) {
+            snapshotFlow { Triple(mainState.size, mainState.position, mainState.placement) }
+                .debounce(500)
+                .collect { (s, pos, pl) -> WindowMemory.save(s, pos, pl == WindowPlacement.Maximized) }
+        }
+
         if (visible) {
             Window(
                 onCloseRequest = { visible = false },
                 state = mainState,
                 title = "Daybreak",
                 icon = icon,
+                onPreviewKeyEvent = { ui.onKey(it) },
             ) {
-                LaunchedEffect(Unit) { window.minimumSize = Dimension(380, 640) }
+                LaunchedEffect(Unit) { window.minimumSize = Dimension(720, 540) }
                 LaunchedEffect(requests) { window.toFront() }
-                DaybreakTheme(settings.style, settings.mode) { App() }
+                DaybreakTheme(settings.style, settings.mode) { App(ui) }
             }
         }
 
         val r = ringing
         if (r != null) {
-            val ringState = rememberWindowState(size = DpSize(420.dp, 720.dp), position = WindowPosition(Alignment.Center))
+            // A toast-like window in the bottom-right corner, above the taskbar.
+            val bounds = remember { GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds }
+            val w = 380
+            val h = if (r.gradual) 250 else 226
+            val ringState = rememberWindowState(
+                size = DpSize(w.dp, h.dp),
+                position = WindowPosition((bounds.x + bounds.width - w - 16).dp, (bounds.y + bounds.height - h - 16).dp),
+            )
             Window(
                 onCloseRequest = { AlarmService.stop() },
                 state = ringState,
                 title = r.title,
                 icon = icon,
+                undecorated = true,
+                resizable = false,
                 alwaysOnTop = true,
             ) {
                 LaunchedEffect(r.startedAt) {
                     window.toFront()
                     window.requestFocus()
                 }
-                DaybreakTheme(settings.style, settings.mode) { RingScreen(r, settings.use24h) }
+                DaybreakTheme(settings.style, settings.mode) { RingToast(r, settings.use24h) }
             }
         }
     }

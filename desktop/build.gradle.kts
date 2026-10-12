@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import java.util.Properties
 
 plugins {
     kotlin("jvm") version "2.0.21"
@@ -6,8 +7,12 @@ plugins {
     id("org.jetbrains.compose") version "1.7.3"
 }
 
+val appVersion: String = Properties().apply {
+    file("../version.properties").inputStream().use { load(it) }
+}.getProperty("version")
+
 group = "com.adamglassner"
-version = "1.1.0"
+version = appVersion
 
 dependencies {
     implementation(compose.desktop.currentOs)
@@ -28,7 +33,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
             packageName = "Daybreak"
-            packageVersion = "1.1.0"
+            packageVersion = appVersion
             description = "Daybreak alarm clock"
             vendor = "Adam Glassner"
             copyright = "© 2026 Adam Glassner"
@@ -46,4 +51,10 @@ compose.desktop {
             }
         }
     }
+}
+
+// The app reads its own version from this resource.
+tasks.processResources {
+    inputs.property("appVersion", appVersion)
+    filesMatching("daybreak-version.txt") { expand("version" to appVersion) }
 }

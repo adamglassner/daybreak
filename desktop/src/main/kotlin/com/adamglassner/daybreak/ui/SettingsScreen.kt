@@ -178,7 +178,7 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
 }
 
 @Composable
-private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val p = LocalDb.current.p
     val name = when (style) {
         ClockStyle.STOCK -> "Stock"
@@ -227,7 +227,7 @@ private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, 
 }
 
 @Composable
-private fun CitySearchDialog(onDismiss: () -> Unit, onPick: (City) -> Unit) {
+fun CitySearchDialog(onDismiss: () -> Unit, onPick: (City) -> Unit) {
     val p = LocalDb.current.p
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }

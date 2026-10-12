@@ -81,14 +81,15 @@ fun c(hex: Long) = Color(hex)
 
 fun buildTheme(style: ClockStyle, dark: Boolean): Db {
     val p = when (style) {
+        // Windows 11 (Fluent) colors for the Stock style on the desktop.
         ClockStyle.STOCK -> if (dark) Palette(
-            true, c(0xFF111318), c(0xFF1C1F26), c(0xFF262A33), c(0xFF2C313B), c(0xFFECEEF2), c(0xFFA3A9B5),
-            c(0xFF8AB4F8), c(0xFF0B1F44), c(0xFF2A3550), c(0xFF8AB4F8), c(0xFFF6C453), c(0xFF2A1E00),
-            c(0xFF22213A), c(0xFF35325C), listOf(c(0xFF1C1F26)), c(0xFFECEEF2),
+            true, c(0xFF202020), c(0xFF2B2B2B), c(0xFF323232), c(0xFF3A3A3A), c(0xFFFFFFFF), c(0xFFC5C5C5),
+            c(0xFF60CDFF), c(0xFF003049), c(0xFF27384A), c(0xFF60CDFF), c(0xFFFCE100), c(0xFF201A00),
+            c(0xFF2A2938), c(0xFF3D3B55), listOf(c(0xFF2B2B2B)), c(0xFFFFFFFF),
         ) else Palette(
-            false, c(0xFFF4F5F8), c(0xFFFFFFFF), c(0xFFEBEDF1), c(0xFFE1E4EA), c(0xFF15171A), c(0xFF5B616B),
-            c(0xFF1A5FD0), c(0xFFFFFFFF), c(0xFFDCE7FB), c(0xFF1A5FD0), c(0xFF8A5A00), c(0xFFFFFFFF),
-            c(0xFFE9E6FF), c(0xFFD6D0FF), listOf(c(0xFFFFFFFF)), c(0xFF15171A),
+            false, c(0xFFF3F3F3), c(0xFFFFFFFF), c(0xFFF9F9F9), c(0xFFE5E5E5), c(0xFF1A1A1A), c(0xFF5D5D5D),
+            c(0xFF005FB8), c(0xFFFFFFFF), c(0xFFDCEBF8), c(0xFF005FB8), c(0xFF9D5D00), c(0xFFFFFFFF),
+            c(0xFFEEEDFB), c(0xFFDEDCF7), listOf(c(0xFFFFFFFF)), c(0xFF1A1A1A),
         )
         ClockStyle.COLORS -> if (dark) Palette(
             true, c(0xFF1A0B3A), c(0xFF24124D), c(0xFF2F1A60), c(0xFF3A2470), c(0xFFFFFFFF), c(0xFFCFC3F5),
@@ -119,16 +120,16 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
         )
     }
     val f = when (style) {
-        ClockStyle.STOCK -> Fonts(Figtree, Figtree, FontWeight.SemiBold, false)
+        ClockStyle.STOCK -> Fonts(FontFamily.Default, FontFamily.Default, FontWeight.SemiBold, false) // Segoe UI on Windows
         ClockStyle.COLORS -> Fonts(Fredoka, Figtree, FontWeight.Bold, false)
         ClockStyle.RETRO -> Fonts(Bebas, SpaceMono, FontWeight.Bold, true)
         ClockStyle.RADIO -> Fonts(Archivo, Archivo, FontWeight.Bold, true)
     }
     val radius = when (style) {
-        ClockStyle.STOCK -> 22.dp
-        ClockStyle.COLORS -> 26.dp
-        ClockStyle.RETRO -> 10.dp
-        ClockStyle.RADIO -> 10.dp
+        ClockStyle.STOCK -> 8.dp
+        ClockStyle.COLORS -> 16.dp
+        ClockStyle.RETRO -> 6.dp
+        ClockStyle.RADIO -> 6.dp
     }
     return Db(style, p, f, radius)
 }

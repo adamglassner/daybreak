@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "desktop/**"
+      - "version.properties"
       - ".github/workflows/windows.yml"
   workflow_dispatch:
 
@@ -26,6 +27,10 @@ jobs:
         with:
           gradle-version: 8.14.3
 
+      - name: Read version
+        shell: bash
+        run: echo "V=$(grep '^version=' version.properties | cut -d= -f2 | tr -d '[:space:]')" >> "$GITHUB_ENV"
+
       - name: Build installer
         run: gradle -p desktop packageExe packageMsi --no-daemon --stacktrace
 
@@ -33,8 +38,8 @@ jobs:
         shell: bash
         run: |
           mkdir out
-          cp desktop/build/compose/binaries/main/exe/*.exe out/Daybreak-Setup.exe
-          cp desktop/build/compose/binaries/main/msi/*.msi out/Daybreak.msi
+          cp desktop/build/compose/binaries/main/exe/*.exe "out/Daybreak-Setup-$V.exe"
+          cp desktop/build/compose/binaries/main/msi/*.msi "out/Daybreak-$V.msi"
           ls -la out
 
       - uses: actions/upload-artifact@v4
@@ -42,14 +47,17 @@ jobs:
           name: Daybreak-windows
           path: out/
 
+      # One release per version (windows-v1.2.0, …). The app's update button reads these.
       - name: Publish release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete windows --yes --cleanup-tag || true
-          gh release create windows out/Daybreak-Setup.exe out/Daybreak.msi --title "Daybreak for Windows (latest build)" \
-            --notes "Built from ${GITHUB_SHA::7}. Run Daybreak-Setup.exe to install."
+          gh release delete "windows-v$V" --yes --cleanup-tag || true
+          gh release create "windows-v$V" "out/Daybreak-Setup-$V.exe" "out/Daybreak-$V.msi" --latest=false \
+            --title "Daybreak $V for Windows" \
+            --notes "Built from ${GITHUB_SHA::7}. Run Daybreak-Setup-$V.exe to install or update, or use Settings → Check for updates in the app."
 
       - name: Save to builds-windows branch
         shell: bash
@@ -58,6 +66,6 @@ jobs:
           git init -q -b builds-windows
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add Daybreak-Setup.exe
-          git commit -q -m "Installer from ${GITHUB_SHA::7}"
+          git add "Daybreak-Setup-$V.exe"
+          git commit -q -m "Installer $V from ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds-windows

@@ -128,7 +128,7 @@ private fun Key(
 
 /** The tuner on the Clock tab (Clock radio style only). */
 @Composable
-fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
+fun TunerPanel(onBrowse: (() -> Unit)?, showVolume: Boolean, modifier: Modifier = Modifier.padding(horizontal = 16.dp)) {
     val p = LocalDb.current.p
     val r by Radio.state.collectAsState()
     val settings by Store.settings.collectAsState()
@@ -150,14 +150,14 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
         else -> "PRESS SEEK TO SPIN THE GLOBE"
     }
 
-    LedWindow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    LedWindow(modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 DText("WORLD RADIO", 12.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.2.sp)
                 Spacer(Modifier.width(8.dp))
                 Box(Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(if (r.playing) p.led else p.ledOff))
                 Spacer(Modifier.weight(1f))
-                LinkButton("Tune in", color = p.panelText, onClick = onBrowse)
+                if (onBrowse != null) LinkButton("Tune in", color = p.panelText, onClick = onBrowse)
             }
             Dial(fraction, r.tuning || r.buffering)
             DText(st?.name?.uppercase() ?: "NO STATION", 19.sp, p.led, FontWeight.Bold, italic = true, maxLines = 1)
@@ -220,7 +220,7 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
 // ---------- browsing stations ----------
 
 @Composable
-fun StationsScreen(onBack: () -> Unit) {
+fun StationsScreen(showHeader: Boolean = true, onBack: () -> Unit) {
     val db = LocalDb.current
     val p = db.p
     val scope = rememberCoroutineScope()
@@ -257,7 +257,7 @@ fun StationsScreen(onBack: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        BackHeader(if (db.f.caps) "TUNE IN" else "Tune in", onBack)
+        if (showHeader) BackHeader(if (db.f.caps) "TUNE IN" else "Tune in", onBack)
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedTextField(
                 value = query,

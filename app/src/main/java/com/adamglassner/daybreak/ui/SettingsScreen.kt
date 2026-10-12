@@ -138,8 +138,13 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
             DText("Tap the weather card on the Clock tab to switch between places.", 13.sp, p.muted)
         }
 
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionLabel("Updates")
+            UpdatesCard()
+        }
+
         DText(
-            "Daybreak 0.2 · Weather by Open-Meteo · Radio by radio-browser.info",
+            "Daybreak $APP_VERSION · Weather by Open-Meteo · Radio by radio-browser.info",
             12.sp, p.muted, modifier = Modifier.fillMaxWidth().padding(top = 24.dp), align = TextAlign.Center,
         )
     }

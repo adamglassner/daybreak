@@ -155,6 +155,12 @@ private fun App(initialTab: Int) {
 
     val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
+    LaunchedEffect(Unit) {
+        val st = com.adamglassner.daybreak.ui.checkForUpdate()
+        if (st is com.adamglassner.daybreak.update.Updater.Status.Available) {
+            com.adamglassner.daybreak.ui.Notices.show("Daybreak ${st.release.version} is available. Update it in Settings.")
+        }
+    }
     var askedNotif by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (!notifOk && !askedNotif && Build.VERSION.SDK_INT >= 33) {
