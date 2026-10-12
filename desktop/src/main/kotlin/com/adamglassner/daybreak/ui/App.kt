@@ -160,6 +160,7 @@ fun App(ui: AppUi) {
                 }
             }
 
+            if (db.style == ClockStyle.TERMINAL && p.dark) Scanlines(Modifier.fillMaxSize())
             ui.alarmDialog?.let { edit -> AlarmDialog(edit, settings) { ui.alarmDialog = null } }
             if (ui.bedtimeDialog) BedtimeDialog(settings) { ui.bedtimeDialog = false }
 

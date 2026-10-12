@@ -30,6 +30,7 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -129,6 +131,10 @@ fun DText(
             fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
             letterSpacing = letterSpacing,
             textAlign = align ?: TextAlign.Unspecified,
+            // A soft CRT glow on the Terminal style's green text.
+            shadow = LocalDb.current.let { db ->
+                if (db.style == ClockStyle.TERMINAL && db.p.dark) Shadow(color.copy(alpha = 0.55f), blurRadius = 9f) else null
+            },
         ),
         maxLines = maxLines,
     )
@@ -138,6 +144,10 @@ fun DText(
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     val db = LocalDb.current
+    if (db.style == ClockStyle.TERMINAL) {
+        DText("# " + text.lowercase(), 13.sp, db.p.muted, FontWeight.Bold, modifier = modifier)
+        return
+    }
     DText(
         text.uppercase(), 13.sp, db.p.muted, FontWeight.Bold, modifier = modifier,
         italic = db.style == ClockStyle.RADIO, letterSpacing = 1.2.sp,
@@ -388,6 +398,12 @@ fun AnalogClock(time: LocalTime, size: Dp, modifier: Modifier = Modifier) {
                 drawCircle(c(0xFFC8963E), r, cx)
                 drawCircle(face, r * 86f / 96f, cx)
             }
+            ClockStyle.TERMINAL -> {
+                face = p.bg; hand = p.text; sec = p.link; tick = p.text; minorTick = p.muted
+                drawCircle(p.surface, r, cx)
+                drawCircle(p.border, r - u, cx, style = Stroke(2 * u))
+                drawCircle(p.muted, 88 * u, cx, style = Stroke(1 * u))
+            }
             ClockStyle.RADIO -> {
                 face = p.panel; hand = p.panelText; sec = p.led; tick = p.panelText; minorTick = p.panelMuted
                 drawCircle(p.panelBorder, r, cx)
@@ -417,12 +433,17 @@ fun AnalogClock(time: LocalTime, size: Dp, modifier: Modifier = Modifier) {
                     drawText(layout, topLeft = Offset(at.x - layout.size.width / 2f, at.y - layout.size.height / 2f))
                 }
             }
+            ClockStyle.TERMINAL -> for (i in 0 until 60) {
+                val s = (if (i % 5 == 0) 6f else 2.5f) * u
+                val at = pt(i * 6f, 80 * u)
+                drawRect(if (i % 5 == 0) tick else minorTick, Offset(at.x - s / 2, at.y - s / 2), Size(s, s))
+            }
             ClockStyle.RADIO -> for (i in 0 until 4) {
                 drawLine(tick, pt(i * 90f, 76 * u), pt(i * 90f, 62 * u), 4 * u)
             }
         }
 
-        val square = db.style == ClockStyle.RETRO
+        val square = db.style == ClockStyle.RETRO || db.style == ClockStyle.TERMINAL
         val cap = if (square) StrokeCap.Square else StrokeCap.Round
         val hourW = when (db.style) { ClockStyle.COLORS -> 10f; ClockStyle.RADIO -> 8f; ClockStyle.RETRO -> 6f; else -> 7f } * u
         val minW = when (db.style) { ClockStyle.COLORS -> 6f; ClockStyle.RADIO -> 5f; ClockStyle.RETRO -> 3.5f; else -> 4f } * u
@@ -575,6 +596,43 @@ fun ProgressRing(fraction: Float, size: Dp, track: Color, fill: Color, modifier:
         drawArc(track, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
         if (fraction > 0f) {
             drawArc(fill, -90f, 360f * fraction.coerceIn(0f, 1f), false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+        }
+    }
+}
+
+/** Terminal style: a shell prompt, a wireframe clock and a big VT323 readout with a blinking cursor. */
+@Composable
+fun TerminalHero(use24: Boolean, showSeconds: Boolean, clockSize: Dp) {
+    val p = LocalDb.current.p
+    val now by rememberNow(500L)
+    val t = java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(now), java.time.ZoneId.systemDefault())
+    val cursorOn = (now / 500L) % 2L == 0L
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        DText("user@daybreak:~$ clock --live", 13.sp, p.muted, family = MonoFont, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp))
+        AnalogClock(t.toLocalTime(), clockSize)
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.Bottom) {
+            val hm = clockDigits(t.hour, t.minute, use24)
+            DText(if (showSeconds) "$hm:%02d".format(t.second) else hm, 84.sp, p.text, family = TerminalFont)
+            DText(if (cursorOn) "█" else " ", 60.sp, p.text, family = TerminalFont, modifier = Modifier.padding(start = 4.dp, bottom = 10.dp))
+            if (!use24) DText(ampm(t.hour), 28.sp, p.muted, family = TerminalFont, modifier = Modifier.padding(bottom = 14.dp))
+        }
+        DText(
+            t.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy")).lowercase() + " · " + java.time.ZoneId.systemDefault().id.lowercase(),
+            13.sp, p.muted, family = MonoFont,
+        )
+    }
+}
+
+/** Faint CRT scanlines over the whole screen (Terminal style, dark mode). Draw-only: never blocks taps. */
+@Composable
+fun Scanlines(modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val step = 3.dp.toPx()
+        var y = 0f
+        while (y < size.height) {
+            drawRect(Color.Black.copy(alpha = 0.22f), Offset(0f, y), Size(size.width, step / 3f))
+            y += step
         }
     }
 }

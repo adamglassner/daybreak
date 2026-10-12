@@ -181,6 +181,9 @@ fun ClockScreen(
             Header(onOpenSettings)
             when (db.style) {
                 ClockStyle.RETRO -> RetroHero(settings)
+                ClockStyle.TERMINAL -> Box(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                    TerminalHero(settings.use24h, settings.showSeconds, 190.dp)
+                }
                 else -> StandardHero(settings)
             }
             Spacer(Modifier.height(14.dp))

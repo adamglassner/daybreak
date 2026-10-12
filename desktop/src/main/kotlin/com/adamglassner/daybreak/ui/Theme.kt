@@ -72,6 +72,13 @@ private val Archivo = FontFamily(
     Font("font/archivo_narrow_bold.ttf", FontWeight.Bold),
     Font("font/archivo_narrow_bold_italic.ttf", FontWeight.Bold, FontStyle.Italic),
 )
+private val Vt323 = FontFamily(Font("font/vt323.ttf", FontWeight.Normal))
+private val JetMono = FontFamily(
+    Font("font/jetbrains_mono_regular.ttf", FontWeight.Normal),
+    Font("font/jetbrains_mono_bold.ttf", FontWeight.Bold),
+)
+val TerminalFont = Vt323
+val MonoFont = JetMono
 val RadioFont = Archivo
 val BebasFont = Bebas
 val FredokaFont = Fredoka
@@ -118,18 +125,30 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
             c(0xFFC41E3A), c(0xFFFFFFFF), c(0xFFEBC9CC), c(0xFFA3172F), c(0xFFC41E3A), c(0xFFFFFFFF),
             c(0xFFEFE7DC), c(0xFFC9BCAB), listOf(c(0xFFEFE7DC)), c(0xFF2A2420),
         )
+        // Green phosphor on black. "Light" is the inverted green-screen look.
+        ClockStyle.TERMINAL -> if (dark) Palette(
+            true, c(0xFF000000), c(0xFF030D05), c(0xFF0A1C0D), c(0xFF1E5A2A), c(0xFF33FF66), c(0xFF22B84C),
+            c(0xFF33FF66), c(0xFF000000), c(0xFF0B2E14), c(0xFF7CFF9E), c(0xFFB6FF3D), c(0xFF000000),
+            c(0xFF030D05), c(0xFF0E2A14), listOf(c(0xFF030D05)), c(0xFF33FF66),
+        ) else Palette(
+            false, c(0xFFE6F5E6), c(0xFFF4FBF4), c(0xFFD3EDD3), c(0xFF8DC79A), c(0xFF0A3A12), c(0xFF2E6B3A),
+            c(0xFF0A7A1F), c(0xFFFFFFFF), c(0xFFCDEBD2), c(0xFF06651A), c(0xFF4C7A00), c(0xFFFFFFFF),
+            c(0xFFF4FBF4), c(0xFFD3EDD3), listOf(c(0xFFF4FBF4)), c(0xFF0A3A12),
+        )
     }
     val f = when (style) {
         ClockStyle.STOCK -> Fonts(FontFamily.Default, FontFamily.Default, FontWeight.SemiBold, false) // Segoe UI on Windows
         ClockStyle.COLORS -> Fonts(Fredoka, Figtree, FontWeight.Bold, false)
         ClockStyle.RETRO -> Fonts(Bebas, SpaceMono, FontWeight.Bold, true)
         ClockStyle.RADIO -> Fonts(Archivo, Archivo, FontWeight.Bold, true)
+        ClockStyle.TERMINAL -> Fonts(Vt323, JetMono, FontWeight.Bold, false)
     }
     val radius = when (style) {
         ClockStyle.STOCK -> 8.dp
         ClockStyle.COLORS -> 16.dp
         ClockStyle.RETRO -> 6.dp
         ClockStyle.RADIO -> 6.dp
+        ClockStyle.TERMINAL -> 0.dp
     }
     return Db(style, p, f, radius)
 }

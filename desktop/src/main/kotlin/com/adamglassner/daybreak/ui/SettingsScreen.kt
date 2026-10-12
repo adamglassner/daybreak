@@ -185,6 +185,7 @@ fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, onClick:
         ClockStyle.COLORS -> "Colors"
         ClockStyle.RETRO -> "Retro"
         ClockStyle.RADIO -> "Radio"
+        ClockStyle.TERMINAL -> "Terminal"
     }
     val shape = RoundedCornerShape(16.dp)
     Column(
@@ -206,6 +207,7 @@ fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, onClick:
                     ClockStyle.COLORS -> c(0xFFFF7A59)
                     ClockStyle.RETRO -> c(0xFF2B231B)
                     ClockStyle.RADIO -> c(0xFF0A0606)
+                    ClockStyle.TERMINAL -> c(0xFF000000)
                 },
             ),
             contentAlignment = Alignment.Center,
@@ -214,6 +216,7 @@ fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, onClick:
                 ClockStyle.STOCK -> DText("10:09", 20.sp, c(0xFFECEEF2), FontWeight.SemiBold, family = FigtreeFont)
                 ClockStyle.COLORS -> DText("10:09", 20.sp, c(0xFF1A0B3A), FontWeight.SemiBold, family = FredokaFont)
                 ClockStyle.RETRO -> DText("10:09", 26.sp, c(0xFFF2B544), family = BebasFont, letterSpacing = 1.sp)
+                ClockStyle.TERMINAL -> DText(">10:09_", 24.sp, c(0xFF33FF66), family = TerminalFont)
                 ClockStyle.RADIO -> Column(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxWidth().height(10.dp).background(c(0xFF6A4428)))
                     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {

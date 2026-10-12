@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class ClockStyle { STOCK, COLORS, RETRO, RADIO }
+enum class ClockStyle { STOCK, COLORS, RETRO, RADIO, TERMINAL }
 enum class ThemeMode { DARK, LIGHT, SYSTEM }
 
 /** Days use java.time.DayOfWeek numbering: 1 = Monday … 7 = Sunday. */

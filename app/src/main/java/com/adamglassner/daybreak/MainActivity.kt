@@ -212,6 +212,7 @@ private fun App(initialTab: Int) {
                 NavBar(tab) { tab = it }
             }
         }
+        if (db.style == ClockStyle.TERMINAL && p.dark) com.adamglassner.daybreak.ui.Scanlines(Modifier.fillMaxSize())
     }
 }
 
@@ -233,6 +234,7 @@ private fun NavBar(selected: Int, onSelect: (Int) -> Unit) {
         ClockStyle.COLORS -> p.surface
         ClockStyle.RETRO -> if (p.dark) c(0xFF16120E) else p.surface
         ClockStyle.RADIO -> if (p.dark) c(0xFF2A2420) else p.surface2
+        ClockStyle.TERMINAL -> p.bg
     }
     Column(Modifier.fillMaxWidth().background(barColor)) {
         val lineColor = when (db.style) {

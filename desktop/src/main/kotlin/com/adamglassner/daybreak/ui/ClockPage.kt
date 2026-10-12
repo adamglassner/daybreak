@@ -89,6 +89,10 @@ private fun HeroCard(settings: Settings) {
         RadioHero(settings)
         return
     }
+    if (db.style == ClockStyle.TERMINAL) {
+        FCard(Modifier.fillMaxWidth(), padding = 28.dp) { TerminalHero(settings.use24h, settings.showSeconds, 250.dp) }
+        return
+    }
     FCard(Modifier.fillMaxWidth(), padding = 28.dp) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             LiveAnalogClock(if (db.style == ClockStyle.RETRO) 240.dp else 280.dp)
