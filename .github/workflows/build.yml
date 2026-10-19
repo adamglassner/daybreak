@@ -32,7 +32,10 @@ jobs:
         run: echo "V=$(grep '^version=' version.properties | cut -d= -f2 | tr -d '[:space:]')" >> "$GITHUB_ENV"
 
       - name: Build
-        run: gradle assembleDebug --no-daemon
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon 2>&1 | tee build.log
 
       - name: Rename
         run: cp app/build/outputs/apk/debug/app-debug.apk "Larksong-$V.apk"
@@ -62,3 +65,14 @@ jobs:
           git add Larksong.apk
           git commit -q -m "APK $V from ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds
+
+      # If the build fails, keep its log on a branch so it can be read without GitHub's log storage.
+      - name: Save failure log
+        if: failure()
+        run: |
+          mkdir faillog && (cp build.log faillog/ 2>/dev/null || echo "no log" > faillog/build.log) && cd faillog
+          git init -q -b ci-log-android
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add . && git commit -q -m "Failed build log"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-log-android
