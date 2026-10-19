@@ -155,7 +155,7 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
         r.nowPlaying != null -> "♪ " + r.nowPlaying
         st != null && r.playing -> stationLine(st)
         st != null -> stationLine(st).ifBlank { "READY" } + " · PRESS PLAY"
-        else -> "PICK A STYLE BELOW TO SPIN THE GLOBE"
+        else -> "PRESS SEEK FOR A RANDOM STATION"
     }
     val mode = SeekMode.of(settings.radioSeek)
     val country = Radio.homeCountry()
