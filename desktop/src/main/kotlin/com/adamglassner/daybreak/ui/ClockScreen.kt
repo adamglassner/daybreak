@@ -514,7 +514,7 @@ private fun RadioClock(
         }
 
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            DText("SNOOZ", 14.sp, p.text, FontWeight.Bold)
+            DText("SNOOZE", 14.sp, p.text, FontWeight.Bold)
             Spacer(Modifier.width(14.dp))
             Box(
                 Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp))
