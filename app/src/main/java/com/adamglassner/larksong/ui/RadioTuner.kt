@@ -78,7 +78,7 @@ private fun Dial(fraction: Float, moving: Boolean) {
     val p = LocalDb.current.p
     val measurer = rememberTextMeasurer()
     val labelStyle = TextStyle(fontFamily = RadioFont, fontSize = 13.sp, color = p.panelText)
-    Canvas(Modifier.fillMaxWidth().height(46.dp).semantics { contentDescription = "Tuning dial" }) {
+    Canvas(Modifier.fillMaxWidth().height(40.dp).semantics { contentDescription = "Tuning dial" }) {
         val left = 10.dp.toPx()
         val right = size.width - 10.dp.toPx()
         val w = right - left
@@ -107,6 +107,7 @@ private fun Key(
     lit: Boolean = false,
     big: Boolean = false,
     small: Boolean = false,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     description: String? = null,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
@@ -123,7 +124,9 @@ private fun Key(
             .padding(horizontal = if (small) 12.dp else 8.dp),
         contentAlignment = Alignment.Center,
     ) {
-        DText(
+        if (icon != null) {
+            androidx.compose.material3.Icon(icon, null, tint = if (lit) c(0xFFFF5A73) else c(0xFFE9DCC4), modifier = Modifier.size(22.dp))
+        } else DText(
             label, if (big) 17.sp else if (small) 12.sp else 14.sp, if (lit) c(0xFFFF5A73) else c(0xFFE9DCC4), FontWeight.Bold,
             italic = true, letterSpacing = 1.sp, maxLines = 1, align = TextAlign.Center,
         )
@@ -173,30 +176,26 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
                 DText(status, 12.sp, if (r.error != null) c(0xFFFF8A9B) else p.panelText, FontWeight.Bold, maxLines = 1)
             }
 
-            // Tuning: previous, play/stop, next
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Key("◀", Modifier.weight(1f), description = "Previous station") { Radio.step(-1) }
-                Key(if (r.playing || r.buffering) "STOP" else "PLAY", Modifier.weight(1.8f), lit = r.playing, big = true) { Radio.toggle() }
-                Key("▶", Modifier.weight(1f), description = "Next station") { Radio.step(1) }
+            // Tuning: previous, play/stop, next, and SEEK for a random station
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Key("", Modifier.weight(1f), icon = DbIcons.Back, description = "Previous station") { Radio.step(-1) }
+                Key(if (r.playing || r.buffering) "STOP" else "PLAY", Modifier.weight(1.6f), lit = r.playing, big = true) { Radio.toggle() }
+                Key("", Modifier.weight(1f), icon = DbIcons.Chevron, description = "Next station") { Radio.step(1) }
+                Key("SEEK", Modifier.weight(1.3f), big = true, description = "Random ${seekLabel(mode).lowercase()} station") { Radio.seek() }
             }
 
-            // Discovering: a random station, or a country's stations
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Key("SEEK", Modifier.weight(1f), description = "Random ${seekLabel(mode).lowercase()} station") { Radio.seek() }
-                Key(
-                    "$countryName ▾".uppercase(), Modifier.weight(1.8f), lit = mode == SeekMode.NEAR_ME,
-                    description = "Country: $countryName. Tap to choose another country.",
-                ) { choosingCountry = true }
-            }
-
-            // What SEEK spins to. Tapping a style spins right away; SEEK then keeps that style.
+            // What SEEK spins to: a country (tap to choose it) or a style. Tapping one spins right away.
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SeekMode.entries.forEach { m ->
-                    Key(seekLabel(m), lit = m == mode, small = true, description = "Random ${seekLabel(m).lowercase()} station") { Radio.seek(m) }
+                Key(
+                    "${countryName.uppercase()} ▾", lit = mode == SeekMode.NEAR_ME, small = true,
+                    description = "Country: $countryName. Tap to choose another country.",
+                ) { choosingCountry = true }
+                SeekMode.entries.filter { it != SeekMode.NEAR_ME }.forEach { m ->
+                    Key(m.label, lit = m == mode, small = true, description = "Random ${m.label.lowercase()} station") { Radio.seek(m) }
                 }
             }
 
@@ -226,12 +225,13 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
                     }
                 }
             }
-            DText("PRESETS: TAP TO PLAY · HOLD TO SAVE THIS STATION", 10.sp, p.panelMuted, FontWeight.Bold, italic = true, maxLines = 2)
-
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val left = if (r.sleepAt > 0) ((r.sleepAt - now) / 60_000L).coerceAtLeast(0) + 1 else 0
                 Key(if (r.sleepAt > 0) "SLEEP $left MIN" else "SLEEP OFF", lit = r.sleepAt > 0, small = true) { Radio.cycleSleep() }
-                if (showVolume) {
+                DText("TAP A NUMBER TO PLAY · HOLD IT TO SAVE THIS STATION", 10.sp, p.panelMuted, FontWeight.Bold, italic = true, maxLines = 2, modifier = Modifier.weight(1f))
+            }
+            if (showVolume) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     DText("VOL", 12.sp, p.panelMuted, FontWeight.Bold, italic = true)
                     Slider(
                         value = r.volume,

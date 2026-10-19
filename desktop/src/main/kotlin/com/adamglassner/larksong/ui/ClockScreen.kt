@@ -440,20 +440,26 @@ private fun RadioClock(
         LedWindow(Modifier.fillMaxWidth().padding(horizontal = 16.dp).semantics {
             contentDescription = "Time ${formatTime(t.hour, t.minute, settings.use24h)}"
         }) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (!settings.use24h) {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Indicator("AM", t.hour < 12)
-                        Indicator("PM", t.hour >= 12)
+            // The digits shrink to fit narrow phones (84 dp tall at most).
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                val extra = (if (!settings.use24h) 40.dp else 0.dp) + (if (settings.showSeconds) 6.dp else 0.dp)
+                val factor = if (settings.showSeconds) 3.56f else 2.92f // digit widths per unit of height
+                val digitH = minOf(84.dp, (maxWidth - extra) / factor)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (!settings.use24h) {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Indicator("AM", t.hour < 12)
+                            Indicator("PM", t.hour >= 12)
+                        }
+                        Spacer(Modifier.width(8.dp))
                     }
-                    Spacer(Modifier.width(8.dp))
-                }
-                val hh = if (settings.use24h) "%02d".format(t.hour) else "%2d".format(if (t.hour % 12 == 0) 12 else t.hour % 12)
-                Row(verticalAlignment = Alignment.Bottom) {
-                    SevenSeg("$hh:%02d".format(t.minute), 84.dp, p.led, p.ledOff, colonOn = t.second % 2 == 0)
-                    if (settings.showSeconds) {
-                        Spacer(Modifier.width(6.dp))
-                        SevenSeg("%02d".format(t.second), 40.dp, p.led, p.ledOff)
+                    val hh = if (settings.use24h) "%02d".format(t.hour) else "%2d".format(if (t.hour % 12 == 0) 12 else t.hour % 12)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        SevenSeg("$hh:%02d".format(t.minute), digitH, p.led, p.ledOff, colonOn = t.second % 2 == 0)
+                        if (settings.showSeconds) {
+                            Spacer(Modifier.width(6.dp))
+                            SevenSeg("%02d".format(t.second), digitH * 0.476f, p.led, p.ledOff)
+                        }
                     }
                 }
             }
