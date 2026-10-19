@@ -1,5 +1,7 @@
 package com.adamglassner.daybreak.ui
 
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -659,12 +661,13 @@ fun TerminalHero(use24: Boolean, showSeconds: Boolean, clockSize: Dp) {
         Row(verticalAlignment = Alignment.Bottom) {
             val hm = clockDigits(t.hour, t.minute, use24)
             DText(if (showSeconds) "$hm:%02d".format(t.second) else hm, 84.sp, p.text, family = TerminalFont)
-            // A block cursor about the size of a lowercase letter, sitting on the baseline.
-            // (The font's own block glyph is taller than the digits.)
-            Box(
-                Modifier.padding(start = 6.dp, end = 4.dp, bottom = 17.dp).size(16.dp, 30.dp)
-                    .background(if (cursorOn) p.text else Color.Transparent),
-            )
+            // A skinny bar cursor: the left sliver of the full-height block glyph, so it keeps the same height.
+            Box(Modifier.padding(start = 6.dp, end = 4.dp, bottom = 10.dp).width(5.dp).clipToBounds()) {
+                DText(
+                    if (cursorOn) "█" else " ", 60.sp, p.text, family = TerminalFont,
+                    modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true),
+                )
+            }
             if (!use24) DText(ampm(t.hour), 28.sp, p.muted, family = TerminalFont, modifier = Modifier.padding(bottom = 14.dp))
         }
         DText(
