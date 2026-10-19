@@ -42,6 +42,11 @@ data class Release(val version: String, val date: String, val changes: List<Stri
 
 /** The change log shown in Settings → About → What's new (newest first). */
 val CHANGELOG = listOf(
+    Release("2.2.0", "October 2026", listOf(
+        "Three new styles with sky backgrounds: Larksong (the colors of the icon), Dawn and Dusk",
+        "Larksong is now the starting style for new installs",
+        "Styles are grouped in Settings: Larksong, Everyday and Throwback",
+    )),
     Release("2.1.0", "October 2026", listOf(
         "Credits and What's new, in Settings → About",
     )),

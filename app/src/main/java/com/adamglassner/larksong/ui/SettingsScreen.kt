@@ -71,14 +71,8 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
 
         Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SectionLabel("Style")
-            ClockStyle.entries.chunked(3).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    row.forEach { s ->
-                        StyleCard(s, settings.style == s, Modifier.weight(1f)) { Store.updateSettings { it.copy(style = s) } }
-                    }
-                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
+            DText("Now using ${styleName(settings.style)}. Swipe a row to see more.", 13.sp, p.muted)
+            StyleGroups(settings.style) { s -> Store.updateSettings { it.copy(style = s) } }
         }
 
         Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -186,71 +180,6 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
     }
 }
 
-@Composable
-private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val p = LocalDb.current.p
-    val name = when (style) {
-        ClockStyle.STOCK -> "Stock"
-        ClockStyle.COLORS -> "Colors"
-        ClockStyle.RETRO -> "Retro"
-        ClockStyle.RADIO -> "Radio"
-        ClockStyle.TERMINAL -> "Terminal"
-        ClockStyle.CLASSIC -> "Classic Larksong"
-        ClockStyle.MODERN -> "Modern"
-    }
-    val shape = RoundedCornerShape(16.dp)
-    Column(
-        modifier
-            .clip(shape)
-            .background(p.surface)
-            .border(BorderStroke(2.dp, if (selected) p.accent else p.border), shape)
-            .clickable(onClick = onClick)
-            .semantics { role = Role.RadioButton; this.selected = selected }
-            .padding(6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        val swatchShape = RoundedCornerShape(10.dp)
-        Box(
-            Modifier.fillMaxWidth().height(60.dp).clip(swatchShape).background(
-                when (style) {
-                    ClockStyle.STOCK -> c(0xFF1C1F26)
-                    ClockStyle.COLORS -> c(0xFFFF7A59)
-                    ClockStyle.RETRO -> c(0xFF2B231B)
-                    ClockStyle.RADIO -> c(0xFF0A0606)
-                    ClockStyle.TERMINAL -> c(0xFF000000)
-                    ClockStyle.CLASSIC -> c(0xFFC0C0C0)
-                    ClockStyle.MODERN -> c(0xFF0B0D12)
-                },
-            ),
-            contentAlignment = Alignment.Center,
-        ) {
-            when (style) {
-                ClockStyle.STOCK -> DText("10:09", 20.sp, c(0xFFECEEF2), FontWeight.SemiBold, family = FigtreeFont)
-                ClockStyle.COLORS -> DText("10:09", 20.sp, c(0xFF1A0B3A), FontWeight.SemiBold, family = FredokaFont)
-                ClockStyle.RETRO -> DText("10:09", 26.sp, c(0xFFF2B544), family = BebasFont, letterSpacing = 1.sp)
-                ClockStyle.TERMINAL -> DText(">10:09_", 24.sp, c(0xFF33FF66), family = TerminalFont)
-                ClockStyle.MODERN -> Box(
-                    Modifier.fillMaxSize().background(Brush.linearGradient(listOf(c(0xFF0B0D12), c(0xFF2A2550)))),
-                    contentAlignment = Alignment.Center,
-                ) { DText("10:09", 24.sp, c(0xFFF3F4F8), family = ModernFont) }
-                ClockStyle.CLASSIC -> Column(Modifier.fillMaxSize()) {
-                    Box(Modifier.fillMaxWidth().height(12.dp).background(Brush.horizontalGradient(listOf(c(0xFF000080), c(0xFF1084D0)))))
-                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                        DText("10:09", 20.sp, c(0xFF000000), FontWeight.Bold, family = PixelFont)
-                    }
-                }
-                ClockStyle.RADIO -> Column(Modifier.fillMaxSize()) {
-                    Box(Modifier.fillMaxWidth().height(10.dp).background(c(0xFF6A4428)))
-                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                        SevenSeg(" 8:54", 26.dp, c(0xFFFF2D4F), c(0xFF2B0B12))
-                    }
-                }
-            }
-        }
-        DText(name, 14.sp, p.text, FontWeight.Bold, maxLines = 2, align = androidx.compose.ui.text.style.TextAlign.Center)
-    }
-}
 
 @Composable
 private fun CitySearchDialog(onDismiss: () -> Unit, onPick: (City) -> Unit) {

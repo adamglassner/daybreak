@@ -139,7 +139,7 @@ fun App(ui: AppUi) {
             unhoverColor = p.muted.copy(alpha = 0.35f), hoverColor = p.muted.copy(alpha = 0.7f), thickness = 6.dp,
         ),
     ) {
-        Box(Modifier.fillMaxSize().background(p.bg)) {
+        Box(Modifier.fillMaxSize().then(skyBackground(p))) {
             Row(Modifier.fillMaxSize()) {
                 NavPane(ui, settings.style)
                 // The content "layer", like Windows 11 apps: slightly raised, rounded top-left corner.
@@ -148,7 +148,7 @@ fun App(ui: AppUi) {
                     if (classic) Modifier.weight(1f).fillMaxHeight().background(p.bg).bevel(p.dark, sunken = true)
                     else Modifier.weight(1f).fillMaxHeight().padding(top = 0.dp)
                         .clip(RoundedCornerShape(topStart = 8.dp))
-                        .background(if (p.dark) Color.White.copy(alpha = 0.03f) else Color.White.copy(alpha = 0.5f))
+                        .background(if (p.sky != null) Color.Transparent else if (p.dark) Color.White.copy(alpha = 0.03f) else Color.White.copy(alpha = 0.5f))
                         .border(BorderStroke(1.dp, p.border), RoundedCornerShape(topStart = 8.dp)),
                 ) {
                     when (ui.page) {

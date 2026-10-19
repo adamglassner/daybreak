@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class ClockStyle { STOCK, MODERN, COLORS, RETRO, RADIO, TERMINAL, CLASSIC }
+enum class ClockStyle { LARKSONG, DAWN, DUSK, STOCK, MODERN, COLORS, RETRO, RADIO, TERMINAL, CLASSIC }
 enum class ThemeMode { DARK, LIGHT, SYSTEM }
 
 /** Days use java.time.DayOfWeek numbering: 1 = Monday … 7 = Sunday. */
@@ -59,7 +59,7 @@ data class Bedtime(
 )
 
 data class Settings(
-    val style: ClockStyle = ClockStyle.STOCK,
+    val style: ClockStyle = ClockStyle.LARKSONG,
     val mode: ThemeMode = ThemeMode.SYSTEM,
     val use24h: Boolean = false,
     val showSeconds: Boolean = true,
@@ -318,7 +318,7 @@ object Store {
         val zonesA = o.optJSONArray("zones")
         val b = o.optJSONObject("bedtime") ?: JSONObject()
         return Settings(
-            style = runCatching { ClockStyle.valueOf(o.optString("style")) }.getOrDefault(ClockStyle.STOCK),
+            style = runCatching { ClockStyle.valueOf(o.optString("style")) }.getOrDefault(ClockStyle.LARKSONG),
             mode = runCatching { ThemeMode.valueOf(o.optString("mode")) }.getOrDefault(ThemeMode.SYSTEM),
             use24h = o.optBoolean("use24h", false),
             showSeconds = o.optBoolean("showSeconds", true),

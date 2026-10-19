@@ -9,6 +9,7 @@ An alarm clock for Android, Windows and Linux. (Larksong used to be called Daybr
 - **Dismiss early**: up before your alarm? Dismiss its next ring from the alarm list, the "Upcoming alarm" notification (Android), or the tray icon (Windows/Linux)
 - **Wake to the radio**: any station as an alarm sound (falls back to the alarm tone if the station can't play)
 - **Sleep sounds** on the Clock page in every style: rain, ocean, fan, crickets, fireplace, white/pink/brown noise, with a timer that fades out
+- **Styles**: Larksong, Dawn and Dusk (sky backgrounds), Stock, Modern, Colors, Retro, Radio (with a world radio tuner), Terminal and Classic, each in light and dark
 - **Stopwatch** with laps, and a **Timer** with its own sound
 - **Bedtime reminder** with an optional matching wake-up alarm
 - Four styles (Stock, Colors, Retro, Clock radio), each in dark and light

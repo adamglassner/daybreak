@@ -66,12 +66,8 @@ fun SettingsPage(settings: Settings) {
 
         SectionTitle("Appearance")
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            SettingsCard("App style", "Colors, fonts and the clock face. Radio adds a world radio tuner.", DbIcons.Clock, below = {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ClockStyle.entries.forEach { s ->
-                        StyleCard(s, settings.style == s, Modifier.weight(1f)) { Store.updateSettings { it.copy(style = s) } }
-                    }
-                }
+            SettingsCard("App style", "Now using ${styleName(settings.style)} · colors, fonts and the clock face", DbIcons.Clock, below = {
+                StyleGroups(settings.style, cardWidth = 150.dp) { s -> Store.updateSettings { it.copy(style = s) } }
             })
             SettingsCard("App theme", "Light, dark, or follow your system setting", DbIcons.Sun) {
                 val modes = listOf(ThemeMode.LIGHT to "Light", ThemeMode.DARK to "Dark", ThemeMode.SYSTEM to "Use system setting")

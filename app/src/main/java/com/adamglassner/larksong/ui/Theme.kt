@@ -1,5 +1,6 @@
 package com.adamglassner.larksong.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -44,7 +45,17 @@ data class Palette(
     val panelText: Color = Color(0xFFE9DCC4),
     val panelMuted: Color = Color(0xFF8E8378),
     val stripe: Color = Color(0xFFC2562B),
+    /** A sky gradient behind the whole app (Larksong, Dawn and Dusk styles), top to bottom. */
+    val sky: List<Color>? = null,
 )
+
+// The Larksong styles' skies.
+val LARKSONG_SKY = listOf(Color(0xFF1E1A4A), Color(0xFF3A2462), Color(0xFF6E3468))
+val LARKSONG_SKY_LIGHT = listOf(Color(0xFFFFF4DE), Color(0xFFFFE2C4), Color(0xFFFFCDB0))
+val DAWN_SKY_LIGHT = listOf(Color(0xFFD9CFF2), Color(0xFFF6CFD6), Color(0xFFFFE4C8))
+val DAWN_SKY_DARK = listOf(Color(0xFF0F1A3A), Color(0xFF2A2E5E), Color(0xFF7A4A6E))
+val DUSK_SKY_DARK = listOf(Color(0xFF0B1430), Color(0xFF3A2455), Color(0xFFB5543A))
+val DUSK_SKY_LIGHT = listOf(Color(0xFFFCE7C8), Color(0xFFF7C59F), Color(0xFFE89A7A))
 
 data class Fonts(
     val display: FontFamily,
@@ -98,6 +109,7 @@ private val OutfitThin = FontFamily(
 )
 val PixelFont = Pixel
 val ModernFont = OutfitThin
+val OutfitFont = Outfit
 val TerminalFont = Vt323
 val MonoFont = JetMono
 val RadioFont = Archivo
@@ -156,6 +168,33 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
             c(0xFFF4FBF4), c(0xFFD3EDD3), listOf(c(0xFFF4FBF4)), c(0xFF0A3A12),
         )
         // "Classic Larksong": Windows 95/98 gray, bevels and navy title bars.
+        ClockStyle.LARKSONG -> if (dark) Palette(
+            true, c(0xFF1E1A4A), c(0xFF2A2360), c(0xFF372D72), c(0x804A3C82), c(0xFFFFF4DE), c(0xFFCBBDDB),
+            c(0xFFFFC857), c(0xFF1B1640), c(0xFF4A3470), c(0xFFFFC857), c(0xFFFF7A59), c(0xFF1B1640),
+            c(0xFF2A2360), c(0xFF3A2D72), listOf(c(0xFF2A2360)), c(0xFFFFF4DE), sky = LARKSONG_SKY,
+        ) else Palette(
+            false, c(0xFFFFF4DE), c(0xFFFFFFFF), c(0xFFFFF0E0), c(0xFFF0D9C2), c(0xFF1B1640), c(0xFF6B5A7A),
+            c(0xFF4A2A6A), c(0xFFFFF4DE), c(0xFFF3E1F0), c(0xFFB8482A), c(0xFFFF7A59), c(0xFFFFFFFF),
+            c(0xFFEDE4F7), c(0xFFDCCDEF), listOf(c(0xFFFFFFFF)), c(0xFF1B1640), sky = LARKSONG_SKY_LIGHT,
+        )
+        ClockStyle.DAWN -> if (dark) Palette(
+            true, c(0xFF0F1A3A), c(0xFF1E2A55), c(0xFF2A3768), c(0x80455A8A), c(0xFFF6E9EE), c(0xFFBEB4CF),
+            c(0xFFF59C86), c(0xFF2A1020), c(0xFF3D3460), c(0xFFF7B6A3), c(0xFFF2A541), c(0xFF2A1020),
+            c(0xFF1E2A55), c(0xFF2C3566), listOf(c(0xFF1E2A55)), c(0xFFF6E9EE), sky = DAWN_SKY_DARK,
+        ) else Palette(
+            false, c(0xFFF6E6EA), c(0xFFFFFFFF), c(0xFFFFF5F1), c(0xFFF0D6D6), c(0xFF3B2240), c(0xFF7A5F78),
+            c(0xFFE8735A), c(0xFFFFFFFF), c(0xFFFCE0D8), c(0xFFB8442E), c(0xFFF2A541), c(0xFF3B2240),
+            c(0xFFEDE6FA), c(0xFFDCD0F5), listOf(c(0xFFFFFFFF)), c(0xFF3B2240), sky = DAWN_SKY_LIGHT,
+        )
+        ClockStyle.DUSK -> if (dark) Palette(
+            true, c(0xFF0B1430), c(0xFF1A2348), c(0xFF27305C), c(0x804A3C70), c(0xFFF7E8D6), c(0xFFC4B5C6),
+            c(0xFFF2A541), c(0xFF1A1020), c(0xFF3A2C50), c(0xFFF6B95C), c(0xFFE0763A), c(0xFF1A1020),
+            c(0xFF1A2348), c(0xFF2A2A5C), listOf(c(0xFF1A2348)), c(0xFFF7E8D6), sky = DUSK_SKY_DARK,
+        ) else Palette(
+            false, c(0xFFFCE7C8), c(0xFFFFF8EE), c(0xFFFFF1DE), c(0xFFEBCDA8), c(0xFF3A2230), c(0xFF7A5A55),
+            c(0xFFC2552E), c(0xFFFFFFFF), c(0xFFF8DCC4), c(0xFFA3441F), c(0xFFF2A541), c(0xFF3A2230),
+            c(0xFFF1E3F0), c(0xFFE2CDE2), listOf(c(0xFFFFF8EE)), c(0xFF3A2230), sky = DUSK_SKY_LIGHT,
+        )
         ClockStyle.MODERN -> if (dark) Palette(
             true, c(0xFF0B0D12), c(0xFF151821), c(0xFF1E2230), c(0xFF252A37), c(0xFFF3F4F8), c(0xFF8B93A7),
             c(0xFF7C6CFF), c(0xFFFFFFFF), c(0xFF2A2550), c(0xFFA99FFF), c(0xFFFFB86B), c(0xFF2A1600),
@@ -183,6 +222,9 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
         ClockStyle.TERMINAL -> Fonts(Vt323, JetMono, FontWeight.Bold, false)
         ClockStyle.CLASSIC -> Fonts(Pixel, Pixel, FontWeight.Bold, false)
         ClockStyle.MODERN -> Fonts(OutfitThin, Outfit, FontWeight.SemiBold, false)
+        ClockStyle.LARKSONG -> Fonts(Outfit, Outfit, FontWeight.SemiBold, false)
+        ClockStyle.DAWN -> Fonts(OutfitThin, Figtree, FontWeight.SemiBold, false)
+        ClockStyle.DUSK -> Fonts(OutfitThin, Outfit, FontWeight.SemiBold, false)
     }
     val radius = when (style) {
         ClockStyle.STOCK -> 22.dp
@@ -192,6 +234,9 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
         ClockStyle.TERMINAL -> 0.dp
         ClockStyle.CLASSIC -> 0.dp
         ClockStyle.MODERN -> 24.dp
+        ClockStyle.LARKSONG -> 26.dp
+        ClockStyle.DAWN -> 24.dp
+        ClockStyle.DUSK -> 20.dp
     }
     return Db(style, p, f, radius)
 }
@@ -222,3 +267,14 @@ fun LarksongTheme(style: ClockStyle, mode: ThemeMode, content: @Composable () ->
         CompositionLocalProvider(LocalDb provides db, content = content)
     }
 }
+
+/** The app's background: the style's sky gradient, or its plain background color. */
+fun skyBackground(p: Palette): androidx.compose.ui.Modifier =
+    if (p.sky != null) androidx.compose.ui.Modifier.background(androidx.compose.ui.graphics.Brush.verticalGradient(p.sky))
+    else androidx.compose.ui.Modifier.background(p.bg)
+
+/** Styles with a soft glow behind the big clock. */
+val GLOW_STYLES = setOf(ClockStyle.MODERN, ClockStyle.LARKSONG, ClockStyle.DAWN, ClockStyle.DUSK)
+
+/** The glow's color: violet for Modern, the warm sunrise color for the Larksong styles. */
+fun glowColor(db: Db): Color = if (db.style == ClockStyle.MODERN) db.p.accent else db.p.warm

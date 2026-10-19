@@ -183,7 +183,7 @@ private fun App(initialTab: Int) {
     }
     val requestLocation = { locationLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }
 
-    Box(Modifier.fillMaxSize().background(p.bg)) {
+    Box(Modifier.fillMaxSize().then(skyBackground(p))) {
         val o = overlay
         if (o != null) {
             BackHandler { overlay = null }
@@ -238,6 +238,7 @@ private fun NavBar(selected: Int, onSelect: (Int) -> Unit) {
         ClockStyle.TERMINAL -> p.bg
         ClockStyle.CLASSIC -> p.surface
         ClockStyle.MODERN -> p.bg
+        ClockStyle.LARKSONG, ClockStyle.DAWN, ClockStyle.DUSK -> p.surface
     }
     Column(Modifier.fillMaxWidth().background(barColor)) {
         val lineColor = when (db.style) {

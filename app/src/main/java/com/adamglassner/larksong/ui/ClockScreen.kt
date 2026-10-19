@@ -243,11 +243,11 @@ private fun Header(onOpenSettings: () -> Unit) {
 private fun StandardHero(settings: Settings) {
     val db = LocalDb.current
     Column(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (db.style == ClockStyle.MODERN) {
+        if (db.style in GLOW_STYLES) {
             // A soft glow of the accent color behind the clock.
             Box(
                 Modifier.size(280.dp).background(
-                    androidx.compose.ui.graphics.Brush.radialGradient(listOf(db.p.accent.copy(alpha = if (db.p.dark) 0.28f else 0.16f), androidx.compose.ui.graphics.Color.Transparent)),
+                    androidx.compose.ui.graphics.Brush.radialGradient(listOf(glowColor(db).copy(alpha = if (db.p.dark) 0.28f else 0.18f), androidx.compose.ui.graphics.Color.Transparent)),
                 ),
                 contentAlignment = Alignment.Center,
             ) { LiveAnalogClock(220.dp) }

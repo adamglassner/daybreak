@@ -102,11 +102,11 @@ private fun HeroCard(settings: Settings) {
     }
     frame {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            if (db.style == ClockStyle.MODERN) {
+            if (db.style in GLOW_STYLES) {
                 // A soft glow of the accent color behind the clock.
                 Box(
                     Modifier.size(340.dp).background(
-                        androidx.compose.ui.graphics.Brush.radialGradient(listOf(p.accent.copy(alpha = if (p.dark) 0.28f else 0.16f), androidx.compose.ui.graphics.Color.Transparent)),
+                        androidx.compose.ui.graphics.Brush.radialGradient(listOf(glowColor(db).copy(alpha = if (p.dark) 0.28f else 0.18f), androidx.compose.ui.graphics.Color.Transparent)),
                     ),
                     contentAlignment = Alignment.Center,
                 ) { LiveAnalogClock(280.dp) }
