@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Status bar icon: the singing lark. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path
-        android:pathData="M12,21 A8,8 0 1,1 12,5 A8,8 0 1,1 12,21 Z M12,9 L12,13 L14,15 M5,3 L2,6 M22,6 L19,3"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
+    <group android:scaleX="0.46" android:scaleY="0.46" android:translateX="-14.6" android:translateY="-9.5">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M36,63 L44,58.5 C46,53 51,49.5 57,49 C60,45.5 63,43 66.5,43 C65.5,41.5 64.5,40.5 62.5,39.8 C66,39.2 69,40.5 70.5,42.5 C72,43 73.3,43.8 74.3,44.6 L80,42.8 L75.2,46.6 L79.4,48.2 L74.4,48.8 C73.5,52.5 70.5,56.5 65.5,59 C60.5,61.8 54,62.6 49,61.6 C46,61 43,61.5 40,62.6 Z" />
+        <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2.4" android:strokeLineCap="round"
+            android:pathData="M53,61.5 L52.6,67 M57.5,61.3 L58,67" />
+        <group android:rotation="-20" android:pivotX="73.5" android:pivotY="37">
+            <path android:fillColor="#FFFFFFFF" android:pathData="M70.5,37 a3,2.2 0 1,0 6,0 a3,2.2 0 1,0 -6,0 Z" />
+        </group>
+        <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round"
+            android:pathData="M76,36.3 L76,28 C78,29 79.6,30.4 79.8,32.6" />
+    </group>
 </vector>

@@ -12,11 +12,11 @@ val appVersion: String = Properties().apply {
 val versionParts = appVersion.split(".").map { it.toInt() }
 
 android {
-    namespace = "com.adamglassner.daybreak"
+    namespace = "com.adamglassner.larksong"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.adamglassner.daybreak"
+        applicationId = "com.adamglassner.larksong"
         minSdk = 26
         targetSdk = 35
         versionCode = versionParts[0] * 10000 + versionParts[1] * 100 + versionParts[2]
@@ -26,9 +26,9 @@ android {
     signingConfigs {
         // A fixed test key kept in the repo so every build can install over the previous one.
         getByName("debug") {
-            storeFile = file("daybreak-debug.keystore")
+            storeFile = file("larksong-debug.keystore")
             storePassword = "android"
-            keyAlias = "daybreak"
+            keyAlias = "larksong"
             keyPassword = "android"
         }
     }

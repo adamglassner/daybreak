@@ -12,4 +12,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Daybreak"
+rootProject.name = "Larksong"

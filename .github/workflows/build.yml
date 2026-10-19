@@ -35,12 +35,12 @@ jobs:
         run: gradle assembleDebug --no-daemon
 
       - name: Rename
-        run: cp app/build/outputs/apk/debug/app-debug.apk "Daybreak-$V.apk"
+        run: cp app/build/outputs/apk/debug/app-debug.apk "Larksong-$V.apk"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Daybreak-apk
-          path: Daybreak-*.apk
+          name: Larksong-apk
+          path: Larksong-*.apk
 
       # One release per version (android-v1.2.0, …). The apps' update button reads these.
       - name: Publish release
@@ -49,16 +49,16 @@ jobs:
         run: |
           gh release delete latest --yes --cleanup-tag || true
           gh release delete "android-v$V" --yes --cleanup-tag || true
-          gh release create "android-v$V" "Daybreak-$V.apk" --latest=false \
-            --title "Daybreak $V for Android" \
-            --notes "Built from ${GITHUB_SHA::7}. Download Daybreak-$V.apk on your phone and open it to install, or use Settings → Check for updates in the app."
+          gh release create "android-v$V" "Larksong-$V.apk" --latest=false \
+            --title "Larksong $V for Android" \
+            --notes "Built from ${GITHUB_SHA::7}. Download Larksong-$V.apk on your phone and open it to install, or use Settings → Check for updates in the app."
 
       - name: Save to builds branch
         run: |
-          mkdir out && cp "Daybreak-$V.apk" out/Daybreak.apk && cd out
+          mkdir out && cp "Larksong-$V.apk" out/Larksong.apk && cd out
           git init -q -b builds
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add Daybreak.apk
+          git add Larksong.apk
           git commit -q -m "APK $V from ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds

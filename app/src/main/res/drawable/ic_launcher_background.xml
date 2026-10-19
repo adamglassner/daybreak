@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Larksong: a dawn sky, deep indigo fading to plum at the horizon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="54" android:startY="0" android:endX="54" android:endY="108">
+                <item android:offset="0" android:color="#FF1E1A4A" />
+                <item android:offset="0.7" android:color="#FF4A2A6A" />
+                <item android:offset="1" android:color="#FF8A3E66" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

@@ -43,15 +43,15 @@ jobs:
       - name: Collect
         run: |
           mkdir out
-          cp desktop/build/compose/binaries/main/deb/*.deb "out/daybreak_${V}_amd64.deb"
-          cp desktop/build/compose/binaries/main/rpm/*.rpm "out/daybreak-${V}.x86_64.rpm"
+          cp desktop/build/compose/binaries/main/deb/*.deb "out/larksong_${V}_amd64.deb"
+          cp desktop/build/compose/binaries/main/rpm/*.rpm "out/larksong-${V}.x86_64.rpm"
           ls -la out
-          dpkg-deb --info "out/daybreak_${V}_amd64.deb"
-          rpm -qip "out/daybreak-${V}.x86_64.rpm"
+          dpkg-deb --info "out/larksong_${V}_amd64.deb"
+          rpm -qip "out/larksong-${V}.x86_64.rpm"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Daybreak-linux
+          name: Larksong-linux
           path: out/
 
       # One release per version (linux-v1.4.0, …). The app's update button reads these.
@@ -60,9 +60,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete "linux-v$V" --yes --cleanup-tag || true
-          gh release create "linux-v$V" "out/daybreak_${V}_amd64.deb" "out/daybreak-${V}.x86_64.rpm" --latest=false \
-            --title "Daybreak $V for Linux" \
-            --notes "Built from ${GITHUB_SHA::7}. Ubuntu, Debian, Mint: daybreak_${V}_amd64.deb. Fedora, openSUSE, RHEL: daybreak-${V}.x86_64.rpm."
+          gh release create "linux-v$V" "out/larksong_${V}_amd64.deb" "out/larksong-${V}.x86_64.rpm" --latest=false \
+            --title "Larksong $V for Linux" \
+            --notes "Built from ${GITHUB_SHA::7}. Ubuntu, Debian, Mint: larksong_${V}_amd64.deb. Fedora, openSUSE, RHEL: larksong-${V}.x86_64.rpm."
 
       - name: Save to builds-linux branch
         run: |

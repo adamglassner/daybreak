@@ -1,6 +1,8 @@
-# Daybreak
+# Larksong
 
-An alarm clock app for Android.
+<img src="desktop/icons/larksong.png" width="96" alt="Larksong icon: a lark singing in front of the rising sun">
+
+An alarm clock for Android, Windows and Linux. (Larksong used to be called Daybreak. Moving over? Back up your alarms in the old app under Settings → Backup, then restore them in Larksong. On Windows and Linux, your settings come over by themselves.)
 
 - **Clock**: analog and digital time with seconds, live weather (GPS and saved cities), and world clocks
 - **Alarms**: repeat days, labels, custom sounds (any audio file on your phone), gradually increasing volume, vibration, snooze
@@ -13,22 +15,22 @@ An alarm clock app for Android.
 
 ## Getting the APK
 
-Every push to `main` builds the app on GitHub Actions. Open the **Actions** tab, pick the latest run, and download **Daybreak-apk** under Artifacts.
+Every push to `main` builds the app on GitHub Actions. Open the **Actions** tab, pick the latest run, and download **Larksong-apk** under Artifacts.
 
 ## Windows
 
-The `desktop/` folder holds Daybreak for Windows. Every change there builds an installer; get **Daybreak-Setup.exe** from the **Releases** page (the "Daybreak for Windows" release). It runs in the system tray so alarms ring while the window is closed, and can start with Windows (Settings → Windows).
+The `desktop/` folder holds Larksong for Windows. Every change there builds an installer; get **Larksong-Setup.exe** from the **Releases** page (the "Larksong for Windows" release). It runs in the system tray so alarms ring while the window is closed, and can start with Windows (Settings → Windows).
 
 To build it yourself on Windows with JDK 17: `gradle -p desktop packageExe`.
 
 ## Linux
 
-Every change to `desktop/` also builds Linux packages. Get them from the **Releases** page ("Daybreak for Linux"):
+Every change to `desktop/` also builds Linux packages. Get them from the **Releases** page ("Larksong for Linux"):
 
-- Ubuntu, Debian, Mint, Pop!_OS: `sudo apt install ./daybreak_<version>_amd64.deb`
-- Fedora, RHEL, openSUSE: `sudo dnf install ./daybreak-<version>.x86_64.rpm`
+- Ubuntu, Debian, Mint, Pop!_OS: `sudo apt install ./larksong_<version>_amd64.deb`
+- Fedora, RHEL, openSUSE: `sudo dnf install ./larksong-<version>.x86_64.rpm`
 
-Daybreak appears in your app menu under Utilities.
+Larksong appears in your app menu under Utilities.
 
 ## Building locally
 

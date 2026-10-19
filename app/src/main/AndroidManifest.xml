@@ -17,13 +17,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
-        android:name=".DaybreakApp"
+        android:name=".LarksongApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Daybreak"
+        android:theme="@style/Theme.Larksong"
         android:usesCleartextTraffic="true">
 
         <activity
@@ -44,7 +44,7 @@
             android:launchMode="singleInstance"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
-            android:taskAffinity="com.adamglassner.daybreak.ring" />
+            android:taskAffinity="com.adamglassner.larksong.ring" />
 
         <service
             android:name=".sleep.SleepService"

@@ -28,31 +28,31 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "com.adamglassner.daybreak.MainKt"
+        mainClass = "com.adamglassner.larksong.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
-            packageName = "Daybreak"
+            packageName = "Larksong"
             packageVersion = appVersion
-            description = "Daybreak alarm clock"
+            description = "Larksong alarm clock"
             vendor = "Adam Glassner"
             copyright = "© 2026 Adam Glassner"
             includeAllModules = true
 
             windows {
-                iconFile.set(project.file("icons/daybreak.ico"))
+                iconFile.set(project.file("icons/larksong.ico"))
                 menu = true
-                menuGroup = "Daybreak"
+                menuGroup = "Larksong"
                 shortcut = true
                 dirChooser = true
                 perUserInstall = true
                 // Keep this constant so new versions upgrade the installed one.
-                upgradeUuid = "6f0b5a9e-2c1d-4e8a-9b7f-3d5c1e2a4b60"
+                upgradeUuid = "73abb75d-d1fb-4bf2-a2f8-7d38df414202"
             }
 
             linux {
-                packageName = "daybreak"
-                iconFile.set(project.file("icons/daybreak.png"))
+                packageName = "larksong"
+                iconFile.set(project.file("icons/larksong.png"))
                 shortcut = true
                 menuGroup = "Utility"
                 appCategory = "Utility"
@@ -69,5 +69,5 @@ compose.desktop {
 // The app reads its own version from this resource.
 tasks.processResources {
     inputs.property("appVersion", appVersion)
-    filesMatching("daybreak-version.txt") { expand("version" to appVersion) }
+    filesMatching("larksong-version.txt") { expand("version" to appVersion) }
 }
