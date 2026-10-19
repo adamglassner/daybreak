@@ -513,6 +513,8 @@ private fun RadioClock(
             }
         }
 
+        SleepSoundsCard(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
+
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             DText("SNOOZE", 14.sp, p.text, FontWeight.Bold)
             Spacer(Modifier.width(14.dp))

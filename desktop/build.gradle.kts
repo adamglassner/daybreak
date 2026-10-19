@@ -71,3 +71,12 @@ tasks.processResources {
     inputs.property("appVersion", appVersion)
     filesMatching("larksong-version.txt") { expand("version" to appVersion) }
 }
+
+// Renders the phone screens to PNGs at phone sizes (see Previews.kt).
+tasks.register<JavaExec>("renderPreviews") {
+    group = "verification"
+    mainClass.set("com.adamglassner.larksong.PreviewsKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    args(layout.buildDirectory.dir("previews").get().asFile.absolutePath)
+    jvmArgs("-Djava.awt.headless=true")
+}

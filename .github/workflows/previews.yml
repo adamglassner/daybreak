@@ -1,0 +1,50 @@
+name: Render phone previews
+
+# Renders the phone screens to PNGs (from the desktop app's copy of them) and saves them on the
+# previews branch, so layouts can be checked at phone sizes without a phone.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/src/**"
+      - "app/src/main/java/**/ui/**"
+      - ".github/workflows/previews.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+      - name: Render
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle -p desktop renderPreviews --no-daemon --stacktrace 2>&1 | tee render.log
+      - name: Save to previews branch
+        run: |
+          cd desktop/build/previews
+          git init -q -b previews
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add . && git commit -q -m "Previews from ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" previews
+      - name: Save failure log
+        if: failure()
+        run: |
+          mkdir faillog && (cp render.log faillog/ 2>/dev/null || echo "no log" > faillog/render.log) && cd faillog
+          git init -q -b ci-log-previews
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add . && git commit -q -m "Failed render log"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-log-previews
