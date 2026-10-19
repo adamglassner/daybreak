@@ -242,6 +242,8 @@ class AlarmService : Service() {
             .build()
         val candidates = listOfNotNull(
             uriString?.let { Uri.parse(it) },
+            // Larksong's own alarm sound: the default, and the fallback if a chosen sound is gone.
+            Uri.parse("android.resource://$packageName/${R.raw.larksong_alarm}"),
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
         )

@@ -43,3 +43,7 @@ gradle assembleDebug
 The APK lands in `app/build/outputs/apk/debug/`.
 
 Weather data from [Open-Meteo](https://open-meteo.com). Fonts: Figtree, Fredoka, Bebas Neue, Space Mono and Archivo Narrow (SIL Open Font License).
+
+## Credits
+
+Default alarm sound: "Alarm Clock" by freesound_community, from Pixabay (Pixabay Content License).

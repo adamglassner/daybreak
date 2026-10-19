@@ -295,7 +295,7 @@ fun SoundPicker(title: String, name: String, allowRadio: Boolean = false, onPick
                 DText("Choose", 14.sp, p.link, FontWeight.Bold)
             }
             DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = p.surface) {
-                DropdownMenuItem(text = { DText("Default alarm sound", 15.sp) }, onClick = {
+                DropdownMenuItem(text = { DText("Larksong alarm (default)", 15.sp) }, onClick = {
                     open = false; onPicked(null, "Default alarm")
                 })
                 if (allowRadio) {

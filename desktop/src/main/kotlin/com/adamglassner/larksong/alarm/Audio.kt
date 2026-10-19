@@ -18,7 +18,10 @@ class Pcm(val samples: ShortArray, val sampleRate: Float, val channels: Int)
 object Audio {
     private const val MAX_SECONDS = 180
 
-    /** Loads a sound file (WAV, AIFF, AU or MP3), or the built-in tone when [path] is null or unreadable. */
+    /**
+     * Loads a sound file (WAV, AIFF, AU or MP3). When [path] is null or unreadable, plays
+     * Larksong's own alarm sound, and if even that can't load, a simple built-in beep.
+     */
     fun load(path: String?): Pcm {
         if (path != null) {
             val f = File(path)
@@ -27,28 +30,40 @@ object Audio {
                 if (pcm != null && pcm.samples.isNotEmpty()) return pcm
             }
         }
-        return defaultTone()
+        return larksongAlarm() ?: defaultTone()
+    }
+
+    @Volatile private var bundled: Pcm? = null
+
+    /** The default alarm sound, packaged with the app. */
+    fun larksongAlarm(): Pcm? {
+        bundled?.let { return it }
+        val pcm = runCatching {
+            val res = Audio::class.java.getResourceAsStream("/sounds/larksong-alarm.wav") ?: return null
+            AudioSystem.getAudioInputStream(java.io.BufferedInputStream(res)).use { decodeStream(it) }
+        }.getOrNull()?.takeIf { it.samples.isNotEmpty() }
+        bundled = pcm
+        return pcm
     }
 
     fun canPlay(f: File) = f.extension.lowercase() in setOf("mp3", "wav", "aif", "aiff", "au")
 
-    private fun decodeSampled(f: File): Pcm {
-        AudioSystem.getAudioInputStream(f).use { src ->
-            val base = src.format
-            val target = AudioFormat(
-                AudioFormat.Encoding.PCM_SIGNED, base.sampleRate, 16, base.channels,
-                base.channels * 2, base.sampleRate, false,
-            )
-            AudioSystem.getAudioInputStream(target, src).use { pcmIn ->
-                val maxBytes = (target.sampleRate * target.channels * 2 * MAX_SECONDS).toInt()
-                val bytes = pcmIn.readNBytes(maxBytes)
-                val out = ShortArray(bytes.size / 2)
-                for (i in out.indices) {
-                    out[i] = ((bytes[2 * i].toInt() and 0xFF) or (bytes[2 * i + 1].toInt() shl 8)).toShort()
-                }
-                return Pcm(out, target.sampleRate, target.channels)
-            }
+    private fun decodeSampled(f: File): Pcm = AudioSystem.getAudioInputStream(f).use { decodeStream(it) }
+
+    private fun decodeStream(src: javax.sound.sampled.AudioInputStream): Pcm {
+        val base = src.format
+        val target = AudioFormat(
+            AudioFormat.Encoding.PCM_SIGNED, base.sampleRate, 16, base.channels,
+            base.channels * 2, base.sampleRate, false,
+        )
+        val bytes = AudioSystem.getAudioInputStream(target, src).use { pcmIn ->
+            pcmIn.readNBytes((target.sampleRate * target.channels * 2 * MAX_SECONDS).toInt())
         }
+        val out = ShortArray(bytes.size / 2)
+        for (i in out.indices) {
+            out[i] = ((bytes[2 * i].toInt() and 0xFF) or (bytes[2 * i + 1].toInt() shl 8)).toShort()
+        }
+        return Pcm(out, target.sampleRate, target.channels)
     }
 
     private fun decodeMp3(f: File): Pcm {
