@@ -69,7 +69,8 @@ fun untilText(ms: Long): String {
     }
 }
 
-fun saveAndSchedule(ctx: Context, a: Alarm, announce: Boolean) {
+fun saveAndSchedule(ctx: Context, alarm: Alarm, announce: Boolean) {
+    val a = alarm.copy(skipUntil = 0L) // editing or turning an alarm on clears an early dismissal
     Store.upsertAlarm(a)
     Scheduler.cancelSnooze(ctx, a.id)
     Scheduler.schedule(ctx, a)
@@ -143,7 +144,22 @@ fun AlarmsScreen(
                 if (alarms.isEmpty()) {
                     DText("No alarms yet. Tap + to add one.", 15.sp, p.muted, modifier = Modifier.padding(8.dp))
                 }
-                alarms.forEach { a -> AlarmRow(a, settings.use24h, onClick = { onEdit(a.id) }) { on -> saveAndSchedule(ctx, a.copy(enabled = on), on) } }
+                alarms.forEach { a ->
+                    AlarmRow(
+                        a, settings.use24h, now,
+                        onClick = { onEdit(a.id) },
+                        onDismiss = {
+                            val when_ = ringText(Scheduler.nextTrigger(a), settings.use24h)
+                            val u = Scheduler.dismissNext(ctx, a)
+                            Toast.makeText(
+                                ctx,
+                                if (u.enabled) "Dismissed $when_. Next: ${ringText(Scheduler.nextTrigger(u), settings.use24h)}" else "Dismissed $when_",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        },
+                        onUndo = { Scheduler.undoDismiss(ctx, a) },
+                    ) { on -> saveAndSchedule(ctx, a.copy(enabled = on), on) }
+                }
             }
         }
 
@@ -163,8 +179,23 @@ fun sleepLength(bed: Int, wake: Int): String {
     return if (span % 60 == 0) "${span / 60} h" else "${span / 60} h ${span % 60} m"
 }
 
+/** "Tue 6:00 AM" for a ring time. */
+fun ringText(at: Long, use24: Boolean): String {
+    val t = java.time.Instant.ofEpochMilli(at).atZone(java.time.ZoneId.systemDefault())
+    val day = t.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
+    return "$day ${formatTime(t.hour, t.minute, use24)}"
+}
+
 @Composable
-private fun AlarmRow(a: Alarm, use24: Boolean, onClick: () -> Unit, onToggle: (Boolean) -> Unit) {
+private fun AlarmRow(
+    a: Alarm,
+    use24: Boolean,
+    now: Long,
+    onClick: () -> Unit,
+    onDismiss: () -> Unit,
+    onUndo: () -> Unit,
+    onToggle: (Boolean) -> Unit,
+) {
     val db = LocalDb.current
     val p = db.p
     val onPanel = db.style == ClockStyle.RADIO && p.dark
@@ -195,6 +226,21 @@ private fun AlarmRow(a: Alarm, use24: Boolean, onClick: () -> Unit, onToggle: (B
                         DText("Gradual", 13.sp, if (a.enabled) p.link else sub)
                     }
                     DText(a.soundName, 13.sp, sub, maxLines = 1)
+                }
+                if (a.enabled) {
+                    val skipping = a.skipUntil > now
+                    val next = Scheduler.nextTrigger(a)
+                    if (skipping) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            DText("Dismissed ${ringText(a.skipUntil, use24)} · next ${ringText(next, use24)}", 13.sp, sub, modifier = Modifier.weight(1f, fill = false))
+                            LinkButton("Undo", onClick = onUndo)
+                        }
+                    } else if (next - now < 24 * 60 * 60 * 1000L) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            DText("Up early? ", 13.sp, sub)
+                            LinkButton("Dismiss ${ringText(next, use24)}", onClick = onDismiss)
+                        }
+                    }
                 }
             }
             DbSwitch(a.enabled, onToggle, "Alarm ${formatTime(a.hour, a.minute, use24)}")

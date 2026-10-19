@@ -23,6 +23,11 @@ class DaybreakApp : Application() {
             },
         )
         nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_UPCOMING, "Upcoming alarms", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "Shows your next alarm a couple of hours ahead, with a button to dismiss it early"
+            },
+        )
+        nm.createNotificationChannel(
             NotificationChannel(CHANNEL_BEDTIME, "Bedtime reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = "Reminds you when it's almost bedtime"
             },
@@ -32,5 +37,6 @@ class DaybreakApp : Application() {
     companion object {
         const val CHANNEL_ALARM = "ringing"
         const val CHANNEL_BEDTIME = "bedtime"
+        const val CHANNEL_UPCOMING = "upcoming"
     }
 }

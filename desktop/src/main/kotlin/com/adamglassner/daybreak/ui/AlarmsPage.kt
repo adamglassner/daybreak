@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -107,6 +109,11 @@ private fun AlarmTile(a: Alarm, use24: Boolean, modifier: Modifier, onEdit: () -
         listOf(
             ContextMenuItem("Edit") { onEdit() },
             ContextMenuItem(if (a.enabled) "Turn off" else "Turn on") { saveAndSchedule(a.copy(enabled = !a.enabled), !a.enabled) },
+        ) + (
+            if (!a.enabled) emptyList()
+            else if (a.skipUntil > System.currentTimeMillis()) listOf(ContextMenuItem("Undo dismiss") { Scheduler.undoDismiss(a) })
+            else listOf(ContextMenuItem("Dismiss next ring (${ringText(Scheduler.nextTrigger(a), use24)})") { dismissNextAndTell(a, use24) })
+        ) + listOf(
             ContextMenuItem("Delete") {
                 Scheduler.cancel(a.id)
                 Store.deleteAlarm(a.id)
@@ -132,7 +139,20 @@ private fun AlarmTile(a: Alarm, use24: Boolean, modifier: Modifier, onEdit: () -
                             )
                             if (!use24) DText(" " + ampm(a.hour), 16.sp, p.muted, modifier = Modifier.padding(bottom = 7.dp))
                         }
-                        if (a.enabled) DText("in ${untilText(Scheduler.nextTrigger(a))}", 12.sp, p.muted)
+                        if (a.enabled) {
+                            val now = System.currentTimeMillis()
+                            val next = Scheduler.nextTrigger(a)
+                            if (a.skipUntil > now) {
+                                DText("Dismissed ${ringText(a.skipUntil, use24)}", 12.sp, p.muted)
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    DText("Next ${ringText(next, use24)}", 12.sp, p.muted)
+                                    SmallLink("Undo") { Scheduler.undoDismiss(a) }
+                                }
+                            } else {
+                                DText("in ${untilText(next)}", 12.sp, p.muted)
+                                if (next - now < 24 * 60 * 60 * 1000L) SmallLink("Dismiss ${ringText(next, use24)}") { dismissNextAndTell(a, use24) }
+                            }
+                        }
                     }
                     FToggle(a.enabled, { on -> saveAndSchedule(a.copy(enabled = on), on) }, "Alarm ${formatTime(a.hour, a.minute, use24)}")
                 }
@@ -287,4 +307,15 @@ fun BedtimeDialog(settings: Settings, onClose: () -> Unit) {
             FToggle(b.linkAlarm, { b = b.copy(linkAlarm = it) }, "Set a matching wake-up alarm")
         }
     }
+}
+
+/** A small text link, for actions inside an alarm tile. */
+@Composable
+private fun SmallLink(text: String, onClick: () -> Unit) {
+    val p = LocalDb.current.p
+    DText(
+        text, 12.sp, p.link, FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 2.dp).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
+            .pointerHoverIcon(androidx.compose.ui.input.pointer.PointerIcon.Hand),
+    )
 }

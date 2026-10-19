@@ -113,7 +113,15 @@ fun main(args: Array<String>) {
             if (Platform.hasTray) trayState.sendNotification(Notification(title, text, Notification.Type.Info))
             else Platform.notifyDesktop(title, text)
         }
-        LaunchedEffect(Unit) { Scheduler.loop(notify) }
+        LaunchedEffect(Unit) {
+            Scheduler.loop(notify) { a, at ->
+                val use24 = Store.settings.value.use24h
+                val what = com.adamglassner.daybreak.ui.ringText(at, use24) + if (a.label.isNotBlank()) " · ${a.label}" else ""
+                notify("Upcoming alarm: $what", "Up already? Right-click the Daybreak tray icon and choose Dismiss, or use the Alarms page.")
+            }
+        }
+        val alarmsNow by Store.alarms.collectAsState()
+        val trayTick by com.adamglassner.daybreak.ui.rememberNow(30_000L)
         LaunchedEffect(Unit) {
             val st = checkForUpdate()
             if (st is Updater.Status.Available) {
@@ -129,6 +137,15 @@ fun main(args: Array<String>) {
             menu = {
                 Item("Open Daybreak", onClick = { visible = true })
                 Item("New alarm", onClick = { visible = true; ui.page = Page.ALARMS; ui.alarmDialog = AlarmEdit(null) })
+                // Reading alarmsNow and trayTick keeps this item up to date.
+                Scheduler.soonest()?.let { (a, at) ->
+                    if (alarmsNow.isNotEmpty() && at - trayTick < 24 * 60 * 60 * 1000L) {
+                        Item("Dismiss next alarm (${com.adamglassner.daybreak.ui.ringText(at, settings.use24h)})", onClick = {
+                            com.adamglassner.daybreak.ui.dismissNextAndTell(a, settings.use24h)
+                            notify("Alarm dismissed", "Daybreak won't ring at ${com.adamglassner.daybreak.ui.ringText(at, settings.use24h)}.")
+                        })
+                    }
+                }
                 if (radio.playing || radio.buffering) {
                     Item("Stop radio (${radio.station?.name ?: ""})", onClick = { Radio.stop() })
                 }

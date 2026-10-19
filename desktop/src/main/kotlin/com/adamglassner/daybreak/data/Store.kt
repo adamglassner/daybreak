@@ -24,6 +24,8 @@ data class Alarm(
     val gradual: Boolean = true,
     val rampSeconds: Int = 60,
     val snoozeMinutes: Int = 10,
+    /** The ring at this time (epoch ms) was dismissed ahead of time; the alarm next rings after it. */
+    val skipUntil: Long = 0L,
 )
 
 data class City(val name: String, val region: String, val lat: Double, val lon: Double)
@@ -235,6 +237,7 @@ object Store {
                 put("soundUri", a.soundUri ?: ""); put("soundName", a.soundName)
                 put("vibrate", a.vibrate); put("gradual", a.gradual)
                 put("ramp", a.rampSeconds); put("snooze", a.snoozeMinutes)
+                if (a.skipUntil > System.currentTimeMillis()) put("skipUntil", a.skipUntil)
             })
         }
     }.toString()
@@ -257,6 +260,7 @@ object Store {
                 gradual = o.optBoolean("gradual", true),
                 rampSeconds = o.optInt("ramp", 60),
                 snoozeMinutes = o.optInt("snooze", 10),
+                skipUntil = o.optLong("skipUntil", 0L),
             )
         }
     }

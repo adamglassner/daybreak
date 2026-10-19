@@ -4,6 +4,7 @@ An alarm clock app for Android.
 
 - **Clock**: analog and digital time with seconds, live weather (GPS and saved cities), and world clocks
 - **Alarms**: repeat days, labels, custom sounds (any audio file on your phone), gradually increasing volume, vibration, snooze
+- **Dismiss early**: up before your alarm? Dismiss its next ring from the alarm list, the "Upcoming alarm" notification (Android), or the tray icon (Windows/Linux)
 - **Stopwatch** with laps, and a **Timer** with its own sound
 - **Bedtime reminder** with an optional matching wake-up alarm
 - Four styles (Stock, Colors, Retro, Clock radio), each in dark and light

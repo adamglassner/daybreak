@@ -64,7 +64,22 @@ fun untilText(ms: Long): String {
     }
 }
 
-fun saveAndSchedule(a: Alarm, announce: Boolean) {
+/** "Tue 6:00 AM" for a ring time. */
+fun ringText(at: Long, use24: Boolean): String {
+    val t = java.time.Instant.ofEpochMilli(at).atZone(java.time.ZoneId.systemDefault())
+    val day = t.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
+    return "$day ${formatTime(t.hour, t.minute, use24)}"
+}
+
+/** Dismisses an alarm's next ring and says so. */
+fun dismissNextAndTell(a: Alarm, use24: Boolean) {
+    val was = ringText(Scheduler.nextTrigger(a), use24)
+    val u = Scheduler.dismissNext(a)
+    Notices.show(if (u.enabled) "Dismissed $was. Next: ${ringText(Scheduler.nextTrigger(u), use24)}" else "Dismissed $was")
+}
+
+fun saveAndSchedule(alarm: Alarm, announce: Boolean) {
+    val a = alarm.copy(skipUntil = 0L) // editing or turning an alarm on clears an early dismissal
     Store.upsertAlarm(a)
     Scheduler.cancelSnooze(a.id)
     Scheduler.schedule(a)

@@ -79,6 +79,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".alarm.UpcomingReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".alarm.BootReceiver"
             android:exported="true">
             <intent-filter>
