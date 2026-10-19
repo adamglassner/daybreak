@@ -18,7 +18,7 @@ import java.util.Locale
 /** What the SEEK button spins to. */
 enum class SeekMode(val label: String, val tag: String? = null, val nearMe: Boolean = false) {
     ANYWHERE("ANYWHERE"),
-    NEAR_ME("MY COUNTRY", nearMe = true),
+    NEAR_ME("COUNTRY", nearMe = true),
     POP("POP", "pop"),
     ROCK("ROCK", "rock"),
     HITS("HITS", "hits"),
@@ -155,6 +155,17 @@ object Radio {
             _state.update { it.copy(tuning = false) }
             val fresh = list.filter { it.uuid !in recent }.ifEmpty { list }
             if (fresh.isEmpty()) onError("Couldn't reach the station directory") else play(fresh.first(), fresh, skipDead = 5)
+        }
+    }
+
+    /** Picks the radio's country: plays its most popular station, and ◀ ▶ step through its top stations. */
+    fun chooseCountry(code: String) {
+        Store.updateSettings { it.copy(radioCountry = code, radioSeek = SeekMode.NEAR_ME.name) }
+        scope.launch {
+            _state.update { it.copy(tuning = true, error = null) }
+            val list = runCatching { RadioBrowser.topStations(code) }.getOrDefault(emptyList())
+            _state.update { it.copy(tuning = false, lineup = list) }
+            if (list.isEmpty()) onError("No stations found for that country") else play(list.first(), list, skipDead = 5)
         }
     }
 

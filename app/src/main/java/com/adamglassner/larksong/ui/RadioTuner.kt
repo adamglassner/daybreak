@@ -154,25 +154,39 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
         else -> "PICK A STYLE BELOW TO SPIN THE GLOBE"
     }
     val mode = SeekMode.of(settings.radioSeek)
+    val country = Radio.homeCountry()
+    val countryName = Locale("", country).getDisplayCountry(Locale.US).ifBlank { country }
+    var choosingCountry by remember { mutableStateOf(false) }
+    fun seekLabel(m: SeekMode) = if (m == SeekMode.NEAR_ME) countryName.uppercase() else m.label
 
     LedWindow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                DText("WORLD RADIO", 12.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.2.sp)
-                Spacer(Modifier.width(8.dp))
                 Box(Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(if (r.playing) p.led else p.ledOff))
-                Spacer(Modifier.weight(1f))
-                LinkButton("Tune in", color = p.panelText, onClick = onBrowse)
+                Spacer(Modifier.width(8.dp))
+                DText("WORLD RADIO", 12.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.2.sp, modifier = Modifier.weight(1f))
+                if (onBrowse != null) LinkButton("Stations", color = p.panelText, onClick = onBrowse)
             }
             Dial(fraction, r.tuning || r.buffering)
-            DText(st?.name?.uppercase() ?: "NO STATION", 19.sp, p.led, FontWeight.Bold, italic = true, maxLines = 1)
-            DText(status, 13.sp, if (r.error != null) c(0xFFFF8A9B) else p.panelText, FontWeight.Bold, maxLines = 1)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                DText(st?.name?.uppercase() ?: "NO STATION", 18.sp, p.led, FontWeight.Bold, italic = true, maxLines = 1)
+                DText(status, 12.sp, if (r.error != null) c(0xFFFF8A9B) else p.panelText, FontWeight.Bold, maxLines = 1)
+            }
 
+            // Tuning: previous, play/stop, next
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Key("◀", Modifier.weight(1f), description = "Previous station") { Radio.step(-1) }
-                Key(if (r.playing || r.buffering) "STOP" else "PLAY", Modifier.weight(1.6f), lit = r.playing, big = true) { Radio.toggle() }
+                Key(if (r.playing || r.buffering) "STOP" else "PLAY", Modifier.weight(1.8f), lit = r.playing, big = true) { Radio.toggle() }
                 Key("▶", Modifier.weight(1f), description = "Next station") { Radio.step(1) }
-                Key("SEEK", Modifier.weight(1.2f), description = "Random ${mode.label.lowercase()} station") { Radio.seek() }
+            }
+
+            // Discovering: a random station, or a country's stations
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Key("SEEK", Modifier.weight(1f), description = "Random ${seekLabel(mode).lowercase()} station") { Radio.seek() }
+                Key(
+                    "$countryName ▾".uppercase(), Modifier.weight(1.8f), lit = mode == SeekMode.NEAR_ME,
+                    description = "Country: $countryName. Tap to choose another country.",
+                ) { choosingCountry = true }
             }
 
             // What SEEK spins to. Tapping a style spins right away; SEEK then keeps that style.
@@ -181,18 +195,18 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                DText("SEEK", 11.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.sp)
                 SeekMode.entries.forEach { m ->
-                    Key(m.label, lit = m == mode, small = true, description = "Random ${m.label.lowercase()} station") { Radio.seek(m) }
+                    Key(seekLabel(m), lit = m == mode, small = true, description = "Random ${seekLabel(m).lowercase()} station") { Radio.seek(m) }
                 }
             }
 
+            // Presets
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for (i in 0 until PRESET_COUNT) {
                     val preset = settings.radioPresets.getOrNull(i)
                     val active = preset != null && preset.uuid == st?.uuid
                     Key(
-                        "${i + 1}", Modifier.weight(1f), lit = active,
+                        "${i + 1}", Modifier.weight(1f), lit = active, small = true,
                         description = if (preset != null) "Preset ${i + 1}: ${preset.name}" else "Preset ${i + 1}, empty",
                         onLongClick = {
                             if (st != null) {
@@ -212,10 +226,11 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
                     }
                 }
             }
+            DText("PRESETS: TAP TO PLAY · HOLD TO SAVE THIS STATION", 10.sp, p.panelMuted, FontWeight.Bold, italic = true, maxLines = 2)
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val left = if (r.sleepAt > 0) ((r.sleepAt - now) / 60_000L).coerceAtLeast(0) + 1 else 0
-                Key(if (r.sleepAt > 0) "SLEEP $left MIN" else "SLEEP OFF", lit = r.sleepAt > 0) { Radio.cycleSleep() }
+                Key(if (r.sleepAt > 0) "SLEEP $left MIN" else "SLEEP OFF", lit = r.sleepAt > 0, small = true) { Radio.cycleSleep() }
                 if (showVolume) {
                     DText("VOL", 12.sp, p.panelMuted, FontWeight.Bold, italic = true)
                     Slider(
@@ -226,10 +241,15 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
                             thumbColor = p.panelText, activeTrackColor = p.led, inactiveTrackColor = c(0xFF3A3430),
                         ),
                     )
-                } else {
-                    DText("HOLD A NUMBER TO SAVE A PRESET", 11.sp, p.panelMuted, FontWeight.Bold, italic = true, maxLines = 1)
                 }
             }
+        }
+    }
+
+    if (choosingCountry) {
+        CountryDialog(onDismiss = { choosingCountry = false }) { picked ->
+            choosingCountry = false
+            Radio.chooseCountry(picked.code)
         }
     }
 }
