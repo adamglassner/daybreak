@@ -1,5 +1,7 @@
 package com.adamglassner.larksong.ui
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,6 +58,7 @@ fun SettingsPage(settings: Settings) {
     val update by Updater.status.collectAsState()
     var addingCity by remember { mutableStateOf(false) }
     var restoreText by remember { mutableStateOf<String?>(null) }
+    var aboutDialog by remember { mutableStateOf<String?>(null) }
     var autostart by remember { mutableStateOf(Platform.isAutostartOn()) }
 
     ScrollPage(maxWidth = 1000.dp) {
@@ -191,7 +194,34 @@ fun SettingsPage(settings: Settings) {
             "Version $APP_VERSION · Weather by Open-Meteo · Radio by radio-browser.info · Keyboard: Ctrl+1–5 switch pages, Ctrl+N new alarm, Ctrl+, settings, Esc closes dialogs",
             DbIcons.Alarm,
         )
+        Spacer(Modifier.height(4.dp))
+        SettingsCard("Credits", "Created by Adam Glassner · The Glassnerds", DbIcons.Music, onClick = { aboutDialog = "credits" }) {
+            Icon(DbIcons.Chevron, null, tint = p.muted, modifier = Modifier.size(16.dp))
+        }
+        Spacer(Modifier.height(4.dp))
+        SettingsCard("What's new", "Changes in each version of Larksong", DbIcons.Bell, onClick = { aboutDialog = "changes" }) {
+            Icon(DbIcons.Chevron, null, tint = p.muted, modifier = Modifier.size(16.dp))
+        }
         Spacer(Modifier.width(1.dp))
+    }
+
+    when (aboutDialog) {
+        "credits" -> ContentDialog(
+            title = "Credits",
+            onDismiss = { aboutDialog = null },
+            primary = "What's new",
+            onPrimary = { aboutDialog = "changes" },
+            secondary = "Close",
+            width = 600.dp,
+        ) { CreditsContent() }
+        "changes" -> ContentDialog(
+            title = "What's new in Larksong",
+            onDismiss = { aboutDialog = null },
+            primary = "Credits",
+            onPrimary = { aboutDialog = "credits" },
+            secondary = "Close",
+            width = 600.dp,
+        ) { ChangelogContent() }
     }
 
     restoreText?.let { text ->

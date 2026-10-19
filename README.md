@@ -46,4 +46,6 @@ Weather data from [Open-Meteo](https://open-meteo.com). Fonts: Figtree, Fredoka,
 
 ## Credits
 
+Created by Adam Glassner · The Glassnerds
+
 Default alarm sound: "Alarm Clock" by freesound_community, from Pixabay (Pixabay Content License).

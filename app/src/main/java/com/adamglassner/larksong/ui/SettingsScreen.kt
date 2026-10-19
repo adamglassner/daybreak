@@ -60,6 +60,11 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
     val db = LocalDb.current
     val p = db.p
     var addingCity by remember { mutableStateOf(false) }
+    var aboutPage by remember { mutableStateOf<String?>(null) }
+    when (aboutPage) {
+        "credits" -> { CreditsScreen { aboutPage = null }; return }
+        "changes" -> { ChangelogScreen { aboutPage = null }; return }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
         BackHeader(if (db.f.caps) "SETTINGS" else "Settings", onBack)
@@ -152,8 +157,23 @@ fun SettingsScreen(settings: Settings, hasLocation: Boolean, onRequestLocation: 
             BackupCard()
         }
 
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionLabel("About")
+            DbCard(Modifier.fillMaxWidth(), padding = 0.dp) {
+                Column {
+                    SettingRow("Credits", "Created by Adam Glassner · The Glassnerds", onClick = { aboutPage = "credits" }) {
+                        Icon(DbIcons.Chevron, null, tint = p.muted, modifier = Modifier.size(18.dp))
+                    }
+                    Divider()
+                    SettingRow("What's new", "Changes in each version of Larksong", onClick = { aboutPage = "changes" }) {
+                        Icon(DbIcons.Chevron, null, tint = p.muted, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+        }
+
         DText(
-            "Larksong $APP_VERSION · Weather by Open-Meteo · Radio by radio-browser.info",
+            "Larksong $APP_VERSION · by Adam Glassner · Weather by Open-Meteo · Radio by radio-browser.info",
             12.sp, p.muted, modifier = Modifier.fillMaxWidth().padding(top = 24.dp), align = TextAlign.Center,
         )
     }
