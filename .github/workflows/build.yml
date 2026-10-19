@@ -56,13 +56,25 @@ jobs:
             --title "Larksong $V for Android" \
             --notes "Built from ${GITHUB_SHA::7}. Download Larksong-$V.apk on your phone and open it to install, or use Settings → Check for updates in the app."
 
+      # latest.json tells the app's update button about this version without using GitHub's
+      # rate-limited API (read from raw.githubusercontent.com).
       - name: Save to builds branch
         run: |
-          mkdir out && cp "Larksong-$V.apk" out/Larksong.apk && cd out
+          manifest() {
+            tag="$1"; title="$2"; shift 2; base="https://github.com/${{ github.repository }}"; list=""
+            for f in "$@"; do
+              size=$(wc -c < "$f" | tr -d ' ')
+              list="$list${list:+,}{\"name\":\"$f\",\"url\":\"$base/releases/download/$tag/$f\",\"size\":$size}"
+            done
+            printf '{"version":"%s","title":"%s","page":"%s/releases/tag/%s","assets":[%s]}\n' "$V" "$title" "$base" "$tag" "$list" > latest.json
+            cat latest.json
+          }
+          manifest "android-v$V" "Larksong $V for Android" "Larksong-$V.apk"
+          mkdir out && cp "Larksong-$V.apk" out/Larksong.apk && mv latest.json out/ && cd out
           git init -q -b builds
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add Larksong.apk
+          git add Larksong.apk latest.json
           git commit -q -m "APK $V from ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds
 

@@ -66,7 +66,17 @@ jobs:
 
       - name: Save to builds-linux branch
         run: |
+          manifest() {
+            tag="$1"; title="$2"; shift 2; base="https://github.com/${{ github.repository }}"; list=""
+            for f in "$@"; do
+              size=$(wc -c < "$f" | tr -d ' ')
+              list="$list${list:+,}{\"name\":\"$f\",\"url\":\"$base/releases/download/$tag/$f\",\"size\":$size}"
+            done
+            printf '{"version":"%s","title":"%s","page":"%s/releases/tag/%s","assets":[%s]}\n' "$V" "$title" "$base" "$tag" "$list" > latest.json
+            cat latest.json
+          }
           cd out
+          manifest "linux-v$V" "Larksong $V for Linux" "larksong_${V}_amd64.deb" "larksong-${V}.x86_64.rpm"
           git init -q -b builds-linux
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"

@@ -64,14 +64,52 @@ object Updater {
         error("Too many redirects")
     }
 
+    /**
+     * Each platform's build publishes a small latest.json on its builds branch. It's read from
+     * raw.githubusercontent.com, which isn't held to the GitHub API's 60-requests-an-hour limit.
+     */
+    private fun manifestUrl(tagPrefix: String): String? = when (tagPrefix) {
+        "android-v" -> "https://raw.githubusercontent.com/$REPO/builds/latest.json"
+        "windows-v" -> "https://raw.githubusercontent.com/$REPO/builds-windows/latest.json"
+        "linux-v" -> "https://raw.githubusercontent.com/$REPO/builds-linux/latest.json"
+        else -> null
+    }
+
+    /** The newest release from latest.json, or null if it can't be read (then the GitHub API is asked). */
+    private fun fromManifest(tagPrefix: String, assetSuffix: String): Release? = runCatching {
+        val url = manifestUrl(tagPrefix) ?: return null
+        val c = open(url)
+        try {
+            if (c.responseCode !in 200..299) return null
+            val o = org.json.JSONObject(c.inputStream.bufferedReader().use { it.readText() })
+            val assets = o.getJSONArray("assets")
+            val a = (0 until assets.length()).map { assets.getJSONObject(it) }
+                .firstOrNull { it.optString("name").endsWith(assetSuffix, ignoreCase = true) } ?: return null
+            Release(
+                o.getString("version"), o.optString("title"), "",
+                a.getString("url"), a.getString("name"), a.optLong("size"), o.optString("page"),
+            )
+        } finally {
+            c.disconnect()
+        }
+    }.getOrNull()
+
     /** Looks for the newest release for this platform. Updates [status]. */
     suspend fun check(currentVersion: String, tagPrefix: String, assetSuffix: String): Status = withContext(Dispatchers.IO) {
         _status.value = Status.Checking
+        val latest = fromManifest(tagPrefix, assetSuffix)
+        if (latest != null) {
+            val r = if (compare(latest.version, currentVersion) > 0) Status.Available(latest) else Status.UpToDate
+            _status.value = r
+            return@withContext r
+        }
         val result: Status = try {
             val c = open("https://api.github.com/repos/$REPO/releases?per_page=30")
             val code = c.responseCode
             if (code == 404) {
                 Status.Failed("Updates aren't available yet: the Larksong repository on GitHub needs to be public.")
+            } else if (code == 403 || code == 429) {
+                Status.Failed("GitHub is limiting update checks right now (too many in the last hour). Try again in a little while.")
             } else if (code !in 200..299) {
                 Status.Failed("GitHub didn't answer (error $code). Try again later.")
             } else {
