@@ -15,6 +15,28 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 
+/** What the SEEK button spins to. */
+enum class SeekMode(val label: String, val tag: String? = null, val nearMe: Boolean = false) {
+    ANYWHERE("ANYWHERE"),
+    NEAR_ME("MY COUNTRY", nearMe = true),
+    POP("POP", "pop"),
+    ROCK("ROCK", "rock"),
+    HITS("HITS", "hits"),
+    HIPHOP("HIP-HOP", "hip-hop"),
+    COUNTRY("COUNTRY", "country"),
+    DANCE("DANCE", "dance"),
+    JAZZ("JAZZ", "jazz"),
+    CLASSICAL("CLASSICAL", "classical"),
+    OLDIES("OLDIES", "oldies"),
+    CHILL("CHILL", "chillout"),
+    NEWS("NEWS", "news"),
+    TALK("TALK", "talk");
+
+    companion object {
+        fun of(name: String) = entries.firstOrNull { it.name == name } ?: ANYWHERE
+    }
+}
+
 /** The platform part: actually plays a stream. */
 interface RadioEngine {
     fun start(station: Station)
@@ -43,12 +65,23 @@ object Radio {
     val state: StateFlow<RadioState> = _state.asStateFlow()
     private var sleepJob: Job? = null
 
+    /** Stations played lately, so SEEK doesn't land on them again. */
+    private val recent = ArrayDeque<String>()
+
+    /** How many more dead stations to skip past automatically after a SEEK or ◀ ▶. */
+    @Volatile private var autoSkip = 0
+    private var skipJob: Job? = null
+
     fun restoreLastStation() {
         val last = Store.settings.value.radioStation
         if (last != null && _state.value.station == null) _state.update { it.copy(station = last) }
     }
 
-    fun play(station: Station, lineup: List<Station>? = null) {
+    fun play(station: Station, lineup: List<Station>? = null, skipDead: Int = 0) {
+        autoSkip = skipDead
+        skipJob?.cancel()
+        recent.remove(station.uuid); recent.addLast(station.uuid)
+        while (recent.size > 60) recent.removeFirst()
         _state.update {
             it.copy(
                 station = station, lineup = lineup ?: it.lineup, playing = false, buffering = true,
@@ -56,6 +89,16 @@ object Radio {
             )
         }
         engine?.start(station)
+        if (skipDead > 0) {
+            // A stream that never starts (stuck connecting) counts as dead too.
+            skipJob = scope.launch {
+                delay(12_000)
+                val now = _state.value
+                if (!now.playing && now.error == null && now.station?.uuid == station.uuid) {
+                    onError("This station isn't playing right now. Try another.")
+                }
+            }
+        }
         Store.updateSettings { it.copy(radioStation = station) }
         scope.launch { RadioBrowser.reportClick(station.uuid) }
     }
@@ -86,17 +129,32 @@ object Radio {
             if (s.lineup.isEmpty()) { onError("Couldn't reach the station directory"); return@launch }
             val i = s.lineup.indexOfFirst { it.uuid == s.station?.uuid }
             val next = if (i < 0) 0 else (i + delta + s.lineup.size) % s.lineup.size
-            play(s.lineup[next])
+            play(s.lineup[next], skipDead = 3)
         }
     }
 
-    /** "Spin the globe": a random station from anywhere in the world. */
+    val seekMode: SeekMode get() = SeekMode.of(Store.settings.value.radioSeek)
+
+    /** Chooses what SEEK spins to, and spins. */
+    fun seek(mode: SeekMode) {
+        Store.updateSettings { it.copy(radioSeek = mode.name) }
+        seek()
+    }
+
+    /**
+     * "Spin the globe": a random, reasonably popular station in the chosen style,
+     * skipping ones played lately. Dead streams are skipped automatically.
+     */
     fun seek() {
+        val mode = seekMode
         scope.launch {
             _state.update { it.copy(tuning = true, error = null) }
-            val list = runCatching { RadioBrowser.randomStations() }.getOrDefault(emptyList())
+            val list = runCatching {
+                RadioBrowser.randomStations(mode.tag, if (mode.nearMe) homeCountry() else null)
+            }.getOrDefault(emptyList())
             _state.update { it.copy(tuning = false) }
-            if (list.isEmpty()) onError("Couldn't reach the station directory") else play(list.first(), list)
+            val fresh = list.filter { it.uuid !in recent }.ifEmpty { list }
+            if (fresh.isEmpty()) onError("Couldn't reach the station directory") else play(fresh.first(), fresh, skipDead = 5)
         }
     }
 
@@ -160,9 +218,32 @@ object Radio {
 
     // ---- called by the engine (any thread) ----
 
-    fun onPlaying(playing: Boolean) = _state.update { it.copy(playing = playing, buffering = if (playing) false else it.buffering, error = if (playing) null else it.error) }
+    fun onPlaying(playing: Boolean) {
+        if (playing) { autoSkip = 0; skipJob?.cancel() }
+        onPlayingState(playing)
+    }
+
+    private fun onPlayingState(playing: Boolean) = _state.update { it.copy(playing = playing, buffering = if (playing) false else it.buffering, error = if (playing) null else it.error) }
     fun onBuffering(buffering: Boolean) = _state.update { it.copy(buffering = buffering) }
-    fun onError(message: String) = _state.update { it.copy(error = message, playing = false, buffering = false) }
+    fun onError(message: String) {
+        val s = _state.value
+        if (autoSkip > 0 && s.lineup.size > 1) {
+            // A station from SEEK or the dial that won't play: quietly move on to the next one.
+            autoSkip--
+            val left = autoSkip
+            _state.update { it.copy(buffering = true, playing = false, error = null) }
+            skipJob?.cancel()
+            skipJob = scope.launch {
+                delay(400)
+                val now = _state.value
+                val i = now.lineup.indexOfFirst { it.uuid == now.station?.uuid }
+                play(now.lineup[(i + 1 + now.lineup.size) % now.lineup.size], skipDead = left)
+            }
+            return
+        }
+        autoSkip = 0
+        _state.update { it.copy(error = message, playing = false, buffering = false) }
+    }
     fun onNowPlaying(title: String?) = _state.update {
         val t = title?.trim()?.takeIf { s -> s.isNotEmpty() && !s.equals(it.station?.name, ignoreCase = true) }
         it.copy(nowPlaying = t)

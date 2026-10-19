@@ -1,5 +1,8 @@
 package com.adamglassner.daybreak.ui
 
+import com.adamglassner.daybreak.radio.SeekMode
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -103,6 +106,7 @@ private fun Key(
     modifier: Modifier = Modifier,
     lit: Boolean = false,
     big: Boolean = false,
+    small: Boolean = false,
     description: String? = null,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
@@ -110,17 +114,17 @@ private fun Key(
     val shape = RoundedCornerShape(6.dp)
     Box(
         modifier
-            .heightIn(min = if (big) 52.dp else 44.dp)
+            .heightIn(min = if (big) 52.dp else if (small) 40.dp else 44.dp)
             .clip(shape)
             .background(if (lit) c(0xFF3A1A20) else c(0xFF2C2724))
             .border(BorderStroke(1.5.dp, if (lit) c(0xFFFF2D4F) else c(0xFF4A433E)), shape)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier)
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = if (small) 12.dp else 8.dp),
         contentAlignment = Alignment.Center,
     ) {
         DText(
-            label, if (big) 17.sp else 14.sp, if (lit) c(0xFFFF5A73) else c(0xFFE9DCC4), FontWeight.Bold,
+            label, if (big) 17.sp else if (small) 12.sp else 14.sp, if (lit) c(0xFFFF5A73) else c(0xFFE9DCC4), FontWeight.Bold,
             italic = true, letterSpacing = 1.sp, maxLines = 1, align = TextAlign.Center,
         )
     }
@@ -147,8 +151,9 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
         r.nowPlaying != null -> "♪ " + r.nowPlaying
         st != null && r.playing -> stationLine(st)
         st != null -> stationLine(st).ifBlank { "READY" } + " · PRESS PLAY"
-        else -> "PRESS SEEK TO SPIN THE GLOBE"
+        else -> "PICK A STYLE BELOW TO SPIN THE GLOBE"
     }
+    val mode = SeekMode.of(settings.radioSeek)
 
     LedWindow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -167,7 +172,19 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
                 Key("◀", Modifier.weight(1f), description = "Previous station") { Radio.step(-1) }
                 Key(if (r.playing || r.buffering) "STOP" else "PLAY", Modifier.weight(1.6f), lit = r.playing, big = true) { Radio.toggle() }
                 Key("▶", Modifier.weight(1f), description = "Next station") { Radio.step(1) }
-                Key("SEEK", Modifier.weight(1.2f), description = "Random station from anywhere") { Radio.seek() }
+                Key("SEEK", Modifier.weight(1.2f), description = "Random ${mode.label.lowercase()} station") { Radio.seek() }
+            }
+
+            // What SEEK spins to. Tapping a style spins right away; SEEK then keeps that style.
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DText("SEEK", 11.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.sp)
+                SeekMode.entries.forEach { m ->
+                    Key(m.label, lit = m == mode, small = true, description = "Random ${m.label.lowercase()} station") { Radio.seek(m) }
+                }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

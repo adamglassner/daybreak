@@ -68,12 +68,16 @@ object RadioBrowser {
 
     private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
 
-    private fun parseStations(json: String): List<Station> {
+    /** [minPopularity]: leave out stations with fewer plays + votes than this (obscure or abandoned ones). */
+    private fun parseStations(json: String, minPopularity: Int = 0): List<Station> {
         val a = JSONArray(json)
         return (0 until a.length()).mapNotNull { i ->
             val o = a.getJSONObject(i)
             val url = o.optString("url_resolved").ifBlank { o.optString("url") }
             if (url.isBlank() || o.optInt("lastcheckok", 1) == 0) return@mapNotNull null
+            if (o.optInt("clickcount") + o.optInt("votes") < minPopularity) return@mapNotNull null
+            val kbps = o.optInt("bitrate")
+            if (minPopularity > 0 && kbps in 1..47) return@mapNotNull null
             Station(
                 uuid = o.optString("stationuuid"),
                 name = o.optString("name").trim().ifBlank { "Unnamed station" },
@@ -88,9 +92,9 @@ object RadioBrowser {
         }.distinctBy { it.name.lowercase() + it.countryCode }
     }
 
-    private fun search(params: String, limit: Int): List<Station> {
+    private fun search(params: String, limit: Int, minPopularity: Int = 0): List<Station> {
         val codec = codecFilter?.let { "&codec=${enc(it)}" } ?: ""
-        return parseStations(get("/json/stations/search?hidebroken=true&limit=$limit$codec&$params"))
+        return parseStations(get("/json/stations/search?hidebroken=true&limit=$limit$codec&$params"), minPopularity)
     }
 
     suspend fun topStations(countryCode: String, limit: Int = 100): List<Station> = withContext(Dispatchers.IO) {
@@ -103,9 +107,20 @@ object RadioBrowser {
         else (byName + search("tag=${enc(query.trim().lowercase())}&order=clickcount&reverse=true", limit)).distinctBy { it.uuid }
     }
 
-    suspend fun randomStations(limit: Int = 30): List<Station> = withContext(Dispatchers.IO) {
-        search("order=random", limit)
-    }
+    /**
+     * Random stations, optionally of one style ([tag]) or from one country, favoring stations
+     * people actually listen to so a spin rarely lands on a dead or empty stream.
+     */
+    suspend fun randomStations(tag: String? = null, countryCode: String? = null, limit: Int = 40): List<Station> =
+        withContext(Dispatchers.IO) {
+            val params = buildString {
+                append("order=random")
+                if (tag != null) append("&tag=${enc(tag)}")
+                if (countryCode != null) append("&countrycode=${enc(countryCode)}")
+            }
+            val good = search(params, 200, minPopularity = 15)
+            (if (good.size >= 8) good else (good + search(params, 100)).distinctBy { it.uuid }).take(limit)
+        }
 
     suspend fun countries(): List<Country> = withContext(Dispatchers.IO) {
         val a = JSONArray(get("/json/countries?order=name&hidebroken=true"))

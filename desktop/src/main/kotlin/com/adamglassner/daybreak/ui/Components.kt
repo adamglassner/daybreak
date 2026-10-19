@@ -653,7 +653,6 @@ fun TerminalHero(use24: Boolean, showSeconds: Boolean, clockSize: Dp) {
     val p = LocalDb.current.p
     val now by rememberNow(500L)
     val t = java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(now), java.time.ZoneId.systemDefault())
-    val cursorOn = (now / 500L) % 2L == 0L
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         DText("user@daybreak:~$ clock --live", 13.sp, p.muted, family = MonoFont, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp))
         AnalogClock(t.toLocalTime(), clockSize)
@@ -661,14 +660,7 @@ fun TerminalHero(use24: Boolean, showSeconds: Boolean, clockSize: Dp) {
         Row(verticalAlignment = Alignment.Bottom) {
             val hm = clockDigits(t.hour, t.minute, use24)
             DText(if (showSeconds) "$hm:%02d".format(t.second) else hm, 84.sp, p.text, family = TerminalFont)
-            // A skinny bar cursor: the left sliver of the full-height block glyph, so it keeps the same height.
-            Box(Modifier.padding(start = 6.dp, end = 4.dp, bottom = 10.dp).width(5.dp).clipToBounds()) {
-                DText(
-                    if (cursorOn) "█" else " ", 60.sp, p.text, family = TerminalFont,
-                    modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true),
-                )
-            }
-            if (!use24) DText(ampm(t.hour), 28.sp, p.muted, family = TerminalFont, modifier = Modifier.padding(bottom = 14.dp))
+            if (!use24) DText(ampm(t.hour), 28.sp, p.muted, family = TerminalFont, modifier = Modifier.padding(start = 8.dp, bottom = 14.dp))
         }
         DText(
             t.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy")).lowercase() + " · " + java.time.ZoneId.systemDefault().id.lowercase(),

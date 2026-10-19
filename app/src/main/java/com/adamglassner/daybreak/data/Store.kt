@@ -73,6 +73,8 @@ data class Settings(
     val radioStation: Station? = null,
     val radioPresets: List<Station?> = List(PRESET_COUNT) { null },
     val radioCountry: String = "",
+    /** The SEEK button's style: a SeekMode name. */
+    val radioSeek: String = "ANYWHERE",
 )
 
 data class TimerState(
@@ -286,6 +288,7 @@ object Store {
         s.radioStation?.let { put("radioStation", stationJson(it)) }
         put("radioPresets", JSONArray().apply { s.radioPresets.forEach { st -> put(st?.let { stationJson(it) } ?: JSONObject.NULL) } })
         put("radioCountry", s.radioCountry)
+        put("radioSeek", s.radioSeek)
     }.toString()
 
     fun stationJson(st: Station): JSONObject = JSONObject().apply {
@@ -336,6 +339,7 @@ object Store {
                 List(PRESET_COUNT) { i -> if (a != null && i < a.length()) parseStation(a.optJSONObject(i)) else null }
             },
             radioCountry = o.optString("radioCountry", ""),
+            radioSeek = o.optString("radioSeek", "ANYWHERE"),
         )
     }
 
