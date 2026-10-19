@@ -659,7 +659,12 @@ fun TerminalHero(use24: Boolean, showSeconds: Boolean, clockSize: Dp) {
         Row(verticalAlignment = Alignment.Bottom) {
             val hm = clockDigits(t.hour, t.minute, use24)
             DText(if (showSeconds) "$hm:%02d".format(t.second) else hm, 84.sp, p.text, family = TerminalFont)
-            DText(if (cursorOn) "█" else " ", 60.sp, p.text, family = TerminalFont, modifier = Modifier.padding(start = 4.dp, bottom = 10.dp))
+            // A block cursor about the size of a lowercase letter, sitting on the baseline.
+            // (The font's own block glyph is taller than the digits.)
+            Box(
+                Modifier.padding(start = 6.dp, end = 4.dp, bottom = 17.dp).size(16.dp, 30.dp)
+                    .background(if (cursorOn) p.text else Color.Transparent),
+            )
             if (!use24) DText(ampm(t.hour), 28.sp, p.muted, family = TerminalFont, modifier = Modifier.padding(bottom = 14.dp))
         }
         DText(
