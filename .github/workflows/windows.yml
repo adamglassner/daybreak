@@ -62,6 +62,35 @@ jobs:
             --title "Larksong $V for Windows" \
             --notes "Built from ${GITHUB_SHA::7}. Run Larksong-Setup-$V.exe to install or update, or use Settings → Check for updates in the app."
 
+      # A direct download link (no redirect) for stores like Microsoft's, which won't accept
+      # GitHub release links. Served by GitHub Pages from the gh-pages branch:
+      # https://adamglassner.github.io/larksong/download/windows/<version>/Larksong-<version>.msi
+      # Keeps the five newest versions; the branch is rewritten each time so it stays small.
+      - name: Publish to the download site
+        shell: bash
+        run: |
+          REPO="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git clone -q --depth 1 -b gh-pages "$REPO" site 2>/dev/null || mkdir -p site
+          rm -rf site/.git
+          mkdir -p "site/download/windows/$V"
+          cp "out/Larksong-$V.msi" "site/download/windows/$V/"
+          ls -d site/download/windows/*/ | sed 's:/$::' | sort -V | head -n -5 | xargs -r rm -rf
+          touch site/.nojekyll
+          {
+            echo '<!doctype html><meta charset="utf-8"><title>Larksong downloads</title>'
+            echo '<h1>Larksong for Windows</h1><ul>'
+            for d in $(ls site/download/windows | sort -Vr); do
+              echo "<li><a href=\"download/windows/$d/Larksong-$d.msi\">Larksong $d (MSI)</a></li>"
+            done
+            echo '</ul><p>Older versions and other platforms: <a href="https://github.com/${{ github.repository }}/releases">Releases</a></p>'
+          } > site/index.html
+          cd site
+          git init -q -b gh-pages
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -q -m "Downloads: Windows $V"
+          git push -q -f "$REPO" gh-pages
+
       - name: Save to builds-windows branch
         shell: bash
         run: |
