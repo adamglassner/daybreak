@@ -82,7 +82,22 @@ private val Pixel = FontFamily(
     Font(R.font.pixelify_regular, FontWeight.Normal),
     Font(R.font.pixelify_bold, FontWeight.Bold),
 )
+private val Outfit = FontFamily(
+    Font(R.font.outfit_light, FontWeight.Light),
+    Font(R.font.outfit_regular, FontWeight.Normal),
+    Font(R.font.outfit_regular, FontWeight.Medium),
+    Font(R.font.outfit_semibold, FontWeight.SemiBold),
+    Font(R.font.outfit_semibold, FontWeight.Bold),
+)
+/** Modern style's big numbers: every weight one step thinner, for light, airy digits. */
+private val OutfitThin = FontFamily(
+    Font(R.font.outfit_extralight, FontWeight.Normal),
+    Font(R.font.outfit_extralight, FontWeight.Medium),
+    Font(R.font.outfit_light, FontWeight.SemiBold),
+    Font(R.font.outfit_regular, FontWeight.Bold),
+)
 val PixelFont = Pixel
+val ModernFont = OutfitThin
 val TerminalFont = Vt323
 val MonoFont = JetMono
 val RadioFont = Archivo
@@ -141,6 +156,15 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
             c(0xFFF4FBF4), c(0xFFD3EDD3), listOf(c(0xFFF4FBF4)), c(0xFF0A3A12),
         )
         // "Classic Daybreak": Windows 95/98 gray, bevels and navy title bars.
+        ClockStyle.MODERN -> if (dark) Palette(
+            true, c(0xFF0B0D12), c(0xFF151821), c(0xFF1E2230), c(0xFF252A37), c(0xFFF3F4F8), c(0xFF8B93A7),
+            c(0xFF7C6CFF), c(0xFFFFFFFF), c(0xFF2A2550), c(0xFFA99FFF), c(0xFFFFB86B), c(0xFF2A1600),
+            c(0xFF151821), c(0xFF252040), listOf(c(0xFF151821)), c(0xFFF3F4F8),
+        ) else Palette(
+            false, c(0xFFF3F4F8), c(0xFFFFFFFF), c(0xFFECEEF4), c(0xFFE3E6EE), c(0xFF0F1220), c(0xFF6A7286),
+            c(0xFF5B4BFF), c(0xFFFFFFFF), c(0xFFE8E5FF), c(0xFF4B3BEA), c(0xFFE08A1E), c(0xFFFFFFFF),
+            c(0xFFEEECFF), c(0xFFE0DCFF), listOf(c(0xFFFFFFFF)), c(0xFF0F1220),
+        )
         ClockStyle.CLASSIC -> if (dark) Palette(
             true, c(0xFF303030), c(0xFF3C3C3C), c(0xFF1E1E1E), c(0xFF1A1A1A), c(0xFFFFFFFF), c(0xFFC8C8C8),
             c(0xFF3A6EA5), c(0xFFFFFFFF), c(0xFF4A4A4A), c(0xFF9DC3F0), c(0xFFFFD700), c(0xFF000000),
@@ -158,6 +182,7 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
         ClockStyle.RADIO -> Fonts(Archivo, Archivo, FontWeight.Bold, true)
         ClockStyle.TERMINAL -> Fonts(Vt323, JetMono, FontWeight.Bold, false)
         ClockStyle.CLASSIC -> Fonts(Pixel, Pixel, FontWeight.Bold, false)
+        ClockStyle.MODERN -> Fonts(OutfitThin, Outfit, FontWeight.SemiBold, false)
     }
     val radius = when (style) {
         ClockStyle.STOCK -> 22.dp
@@ -166,6 +191,7 @@ fun buildTheme(style: ClockStyle, dark: Boolean): Db {
         ClockStyle.RADIO -> 10.dp
         ClockStyle.TERMINAL -> 0.dp
         ClockStyle.CLASSIC -> 0.dp
+        ClockStyle.MODERN -> 24.dp
     }
     return Db(style, p, f, radius)
 }

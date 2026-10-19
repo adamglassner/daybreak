@@ -61,6 +61,7 @@ fun ClockPage(settings: Settings, ui: AppUi) {
                     Column(Modifier.weight(1.1f)) { HeroCard(settings) }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         WeatherPanel(weather, settings, onNext = { weatherIndex++ }, onOpenSettings = { ui.page = Page.SETTINGS })
+                        SleepSoundsCard()
                         WorldPanel(settings, onAdd = { addingZone = true })
                     }
                 }
@@ -68,6 +69,7 @@ fun ClockPage(settings: Settings, ui: AppUi) {
                 Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     HeroCard(settings)
                     WeatherPanel(weather, settings, onNext = { weatherIndex++ }, onOpenSettings = { ui.page = Page.SETTINGS })
+                    SleepSoundsCard()
                     WorldPanel(settings, onAdd = { addingZone = true })
                 }
             }
@@ -100,7 +102,15 @@ private fun HeroCard(settings: Settings) {
     }
     frame {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            LiveAnalogClock(if (db.style == ClockStyle.RETRO) 240.dp else 280.dp)
+            if (db.style == ClockStyle.MODERN) {
+                // A soft glow of the accent color behind the clock.
+                Box(
+                    Modifier.size(340.dp).background(
+                        androidx.compose.ui.graphics.Brush.radialGradient(listOf(p.accent.copy(alpha = if (p.dark) 0.28f else 0.16f), androidx.compose.ui.graphics.Color.Transparent)),
+                    ),
+                    contentAlignment = Alignment.Center,
+                ) { LiveAnalogClock(280.dp) }
+            } else LiveAnalogClock(if (db.style == ClockStyle.RETRO) 240.dp else 280.dp)
             Spacer(Modifier.height(20.dp))
             val now by rememberNow(250L)
             val t = local(now)

@@ -38,11 +38,14 @@ object AlarmService {
     private var player: LoopPlayer? = null
     private var job: Job? = null
     @Volatile private var volume = 1f
+    @Volatile private var usingRadio = false
+    private var radioVolumeBefore = -1f
 
     @Synchronized
     fun ring(kind: String, id: Int, preview: Preview? = null) {
         stopPlayback()
         com.adamglassner.daybreak.radio.Radio.stop() // the alarm takes over from the radio
+        if (preview == null) com.adamglassner.daybreak.sleep.SleepSounds.stop()
         val settings = Store.settings.value
         val alarm = Store.alarm(id)
         val title: String
@@ -68,13 +71,25 @@ object AlarmService {
         volume = if (gradual) 0.03f else 1f
         _ringing.value = Ringing(kind, id, title, soundName, if (gradual) 0f else 1f, canSnooze, alarm?.snoozeMinutes ?: 10, gradual)
 
+        val radioUrl = RadioAlarm.url(sound)
         job = scope.launch {
-            val pcm = Audio.load(sound)
-            val p = LoopPlayer(pcm) { volume }
-            synchronized(this@AlarmService) {
-                if (!isActive) return@launch
-                player = p
-                p.start()
+            fun startTone(path: String?) {
+                val p = LoopPlayer(Audio.load(path)) { volume }
+                synchronized(this@AlarmService) {
+                    if (!isActive) return
+                    player = p
+                    p.start()
+                }
+            }
+            if (radioUrl != null) {
+                // Wake to the radio, through the radio player at the alarm's volume.
+                val radio = com.adamglassner.daybreak.radio.Radio
+                radioVolumeBefore = radio.state.value.volume
+                radio.setVolume(volume)
+                radio.play(com.adamglassner.daybreak.data.Station(uuid = "", name = soundName.removePrefix("Radio: "), url = radioUrl))
+                usingRadio = true
+            } else {
+                startTone(sound)
             }
             val start = System.currentTimeMillis()
             val rampMs = rampSec.coerceAtLeast(5) * 1000L
@@ -84,6 +99,17 @@ object AlarmService {
                     val frac = (elapsed.toFloat() / rampMs).coerceIn(0f, 1f)
                     volume = maxOf(0.03f, frac)
                     _ringing.value = _ringing.value?.copy(volume = frac)
+                }
+                if (usingRadio) {
+                    val r = com.adamglassner.daybreak.radio.Radio.state.value
+                    val failed = r.error != null || (!r.playing && elapsed > RadioAlarm.START_TIMEOUT_MS)
+                    if (failed) {
+                        // The station didn't start (no internet, station down): ring normally instead.
+                        stopRadio()
+                        startTone(null)
+                    } else {
+                        com.adamglassner.daybreak.radio.Radio.setVolume(volume)
+                    }
                 }
                 if (elapsed > AUTO_STOP_MS) { stop(); break }
                 delay(200)
@@ -109,5 +135,14 @@ object AlarmService {
         job = null
         player?.stop()
         player = null
+        stopRadio()
+    }
+
+    private fun stopRadio() {
+        if (!usingRadio) return
+        usingRadio = false
+        com.adamglassner.daybreak.radio.Radio.stop()
+        if (radioVolumeBefore >= 0f) com.adamglassner.daybreak.radio.Radio.setVolume(radioVolumeBefore)
+        radioVolumeBefore = -1f
     }
 }

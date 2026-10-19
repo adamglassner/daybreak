@@ -429,6 +429,11 @@ fun AnalogClock(time: LocalTime, size: Dp, modifier: Modifier = Modifier) {
                 drawCircle(Color.White, r - 2 * u, cx, style = Stroke(2 * u))
                 drawCircle(face, r - 5 * u, cx)
             }
+            ClockStyle.MODERN -> {
+                face = p.surface; hand = p.text; sec = p.accent; tick = p.text; minorTick = p.muted
+                drawCircle(p.surface, r, cx)
+                drawCircle(p.accent.copy(alpha = 0.45f), r - u, cx, style = Stroke(1.5f * u))
+            }
             ClockStyle.COLORS -> {
                 face = p.accent; hand = p.onAccent; sec = Color.White; tick = p.onAccent; minorTick = p.onAccent
                 drawCircle(face, r, cx)
@@ -482,6 +487,10 @@ fun AnalogClock(time: LocalTime, size: Dp, modifier: Modifier = Modifier) {
             ClockStyle.RADIO -> for (i in 0 until 4) {
                 drawLine(tick, pt(i * 90f, 76 * u), pt(i * 90f, 62 * u), 4 * u)
             }
+            ClockStyle.MODERN -> for (i in 0 until 12) {
+                val major = i % 3 == 0
+                drawLine(if (major) tick else minorTick, pt(i * 30f, 86 * u), pt(i * 30f, (if (major) 72 else 80) * u), (if (major) 2.5f else 1.5f) * u, StrokeCap.Round)
+            }
             ClockStyle.CLASSIC -> for (i in 0 until 60) {
                 val major = i % 5 == 0
                 val s = (if (major) 5f else 2f) * u
@@ -492,8 +501,8 @@ fun AnalogClock(time: LocalTime, size: Dp, modifier: Modifier = Modifier) {
 
         val square = db.style == ClockStyle.RETRO || db.style == ClockStyle.TERMINAL || db.style == ClockStyle.CLASSIC
         val cap = if (square) StrokeCap.Square else StrokeCap.Round
-        val hourW = when (db.style) { ClockStyle.COLORS -> 10f; ClockStyle.RADIO -> 8f; ClockStyle.RETRO -> 6f; else -> 7f } * u
-        val minW = when (db.style) { ClockStyle.COLORS -> 6f; ClockStyle.RADIO -> 5f; ClockStyle.RETRO -> 3.5f; else -> 4f } * u
+        val hourW = when (db.style) { ClockStyle.MODERN -> 5f; ClockStyle.COLORS -> 10f; ClockStyle.RADIO -> 8f; ClockStyle.RETRO -> 6f; else -> 7f } * u
+        val minW = when (db.style) { ClockStyle.MODERN -> 2.5f; ClockStyle.COLORS -> 6f; ClockStyle.RADIO -> 5f; ClockStyle.RETRO -> 3.5f; else -> 4f } * u
         drawLine(hand, cx, pt(hourF * 30f, 46 * u), hourW, cap)
         drawLine(hand, cx, pt(minF * 6f, 70 * u), minW, cap)
         drawLine(sec, pt(secF * 6f + 180f, 16 * u), pt(secF * 6f, 78 * u), 2.5f * u, StrokeCap.Round)

@@ -14,12 +14,20 @@ class DaybreakApp : Application() {
         com.adamglassner.daybreak.ui.Notices.init(this)
         Radio.engine = AndroidRadioEngine(this)
         Radio.restoreLastStation()
+        com.adamglassner.daybreak.sleep.SleepSounds.output = com.adamglassner.daybreak.sleep.AndroidSleepOutput(this)
+        com.adamglassner.daybreak.sleep.SleepSounds.restore()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_ALARM, "Alarms and timers", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Shows when an alarm or timer is ringing"
                 setSound(null, null)
                 enableVibration(false)
+            },
+        )
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_SLEEP, "Sleep sounds", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "Shows while sleep sounds are playing, with a button to stop them"
+                setSound(null, null)
             },
         )
         nm.createNotificationChannel(
@@ -38,5 +46,6 @@ class DaybreakApp : Application() {
         const val CHANNEL_ALARM = "ringing"
         const val CHANNEL_BEDTIME = "bedtime"
         const val CHANNEL_UPCOMING = "upcoming"
+        const val CHANNEL_SLEEP = "sleep"
     }
 }

@@ -215,8 +215,9 @@ private fun AlarmRow(a: Alarm, use24: Boolean, onClick: () -> Unit, onToggle: (B
 
 /** A sound row with a menu: the default tone, a Windows sound, or an audio file from the PC. */
 @Composable
-fun SoundPicker(title: String, name: String, onPicked: (String?, String) -> Unit) {
+fun SoundPicker(title: String, name: String, allowRadio: Boolean = false, onPicked: (String?, String) -> Unit) {
     val p = LocalDb.current.p
+    var pickingRadio by remember { mutableStateOf(false) }
     var open by remember { mutableStateOf(false) }
     var listing by remember { mutableStateOf(false) }
 
@@ -235,6 +236,9 @@ fun SoundPicker(title: String, name: String, onPicked: (String?, String) -> Unit
                 DropdownMenuItem(text = { DText("Default alarm sound", 15.sp) }, onClick = {
                     open = false; onPicked(null, "Default alarm")
                 })
+                if (allowRadio) {
+                    DropdownMenuItem(text = { DText("Wake to the radio…", 15.sp) }, onClick = { open = false; pickingRadio = true })
+                }
                 if (Platform.systemSounds().isNotEmpty()) {
                     DropdownMenuItem(text = { DText("${Platform.systemSoundsLabel}…", 15.sp) }, onClick = { open = false; listing = true })
                 }
@@ -272,6 +276,13 @@ fun SoundPicker(title: String, name: String, onPicked: (String?, String) -> Unit
             confirmButton = {},
             dismissButton = { TextButton(onClick = { listing = false }) { DText("Cancel", 16.sp, p.muted, FontWeight.Bold) } },
         )
+    }
+
+    if (pickingRadio) {
+        RadioStationDialog(onDismiss = { pickingRadio = false }) { st ->
+            pickingRadio = false
+            onPicked(com.adamglassner.daybreak.alarm.RadioAlarm.soundUri(st), com.adamglassner.daybreak.alarm.RadioAlarm.soundName(st))
+        }
     }
 }
 
@@ -347,7 +358,7 @@ fun AlarmEditScreen(alarmId: Int?, settings: Settings, onDone: () -> Unit) {
                         )
                     }
                     Divider()
-                    SoundPicker("Sound", a.soundName) { uri, name -> a = a.copy(soundUri = uri, soundName = name) }
+                    SoundPicker("Sound", a.soundName, allowRadio = true) { uri, name -> a = a.copy(soundUri = uri, soundName = name) }
                     Divider()
                     SettingRow(
                         "Gradually increase volume",

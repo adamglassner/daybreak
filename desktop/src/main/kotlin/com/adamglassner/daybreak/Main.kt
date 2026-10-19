@@ -90,6 +90,8 @@ fun main(args: Array<String>) {
     Store.init(Platform.dataDir())
     RadioBrowser.codecFilter = "MP3" // the Windows player handles MP3 streams
     Radio.engine = StreamRadioEngine()
+    com.adamglassner.daybreak.sleep.SleepSounds.output = com.adamglassner.daybreak.sleep.DesktopSleepOutput()
+    com.adamglassner.daybreak.sleep.SleepSounds.restore()
     Radio.restoreLastStation()
     val startInTray = "--tray" in args
     val ui = AppUi()
@@ -121,6 +123,7 @@ fun main(args: Array<String>) {
             }
         }
         val alarmsNow by Store.alarms.collectAsState()
+        val sleepNow by com.adamglassner.daybreak.sleep.SleepSounds.state.collectAsState()
         val trayTick by com.adamglassner.daybreak.ui.rememberNow(30_000L)
         LaunchedEffect(Unit) {
             val st = checkForUpdate()
@@ -145,6 +148,9 @@ fun main(args: Array<String>) {
                             notify("Alarm dismissed", "Daybreak won't ring at ${com.adamglassner.daybreak.ui.ringText(at, settings.use24h)}.")
                         })
                     }
+                }
+                if (sleepNow.playing) {
+                    Item("Stop sleep sounds (${sleepNow.sound.label})", onClick = { com.adamglassner.daybreak.sleep.SleepSounds.stop() })
                 }
                 if (radio.playing || radio.buffering) {
                     Item("Stop radio (${radio.station?.name ?: ""})", onClick = { Radio.stop() })

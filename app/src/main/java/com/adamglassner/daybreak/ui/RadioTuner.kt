@@ -382,3 +382,87 @@ private fun CountryDialog(onDismiss: () -> Unit, onPick: (Country) -> Unit) {
         dismissButton = { TextButton(onClick = onDismiss) { DText("Cancel", 16.sp, p.muted, FontWeight.Bold) } },
     )
 }
+
+// ---------- wake to the radio ----------
+
+/** Chooses the station an alarm wakes you with: your presets and last station, popular ones, or a search. */
+@Composable
+fun RadioStationDialog(onDismiss: () -> Unit, onPick: (Station) -> Unit) {
+    val p = LocalDb.current.p
+    val settings by Store.settings.collectAsState()
+    val scope = rememberCoroutineScope()
+    var query by remember { mutableStateOf("") }
+    var searched by remember { mutableStateOf<String?>(null) }
+    var results by remember { mutableStateOf<List<Station>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+
+    fun load(block: suspend () -> List<Station>) {
+        results = null; failed = false
+        scope.launch {
+            val list = runCatching { block() }.getOrNull()
+            failed = list == null
+            results = list ?: emptyList()
+        }
+    }
+    fun search() {
+        val q = query.trim()
+        if (q.isEmpty()) return
+        searched = q
+        load { RadioBrowser.searchByName(q, 40) }
+    }
+    LaunchedEffect(Unit) { load { RadioBrowser.topStations(Radio.homeCountry(), 40) } }
+    val mine = (listOfNotNull(settings.radioStation) + settings.radioPresets.filterNotNull())
+        .filter { it.url.isNotBlank() }.distinctBy { it.url }
+
+    @Composable
+    fun StationPick(s: Station) {
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { onPick(s) }.padding(vertical = 9.dp, horizontal = 6.dp),
+        ) {
+            DText(s.name, 15.sp, p.text, FontWeight.Bold, maxLines = 1)
+            val line = stationLine(s)
+            if (line.isNotBlank()) DText(line, 12.sp, p.muted, maxLines = 1)
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = p.surface,
+        title = { DText("Wake to the radio", 20.sp, weight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DText("If the station can't play when the alarm goes off, the regular alarm sound plays instead.", 13.sp, p.muted)
+                OutlinedTextField(
+                    value = query, onValueChange = { query = it }, singleLine = true,
+                    placeholder = { DText("Search: station, city or style", 14.sp, p.muted) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { search() }),
+                    trailingIcon = { LinkButton("Search") { search() } },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = p.text, unfocusedTextColor = p.text,
+                        focusedBorderColor = p.accent, unfocusedBorderColor = p.border, cursorColor = p.accent,
+                    ),
+                )
+                LazyColumn(Modifier.fillMaxWidth().heightIn(max = 340.dp)) {
+                    if (mine.isNotEmpty() && searched == null) {
+                        item { DText("Your stations", 13.sp, p.muted, FontWeight.Bold, modifier = Modifier.padding(top = 4.dp)) }
+                        items(mine) { StationPick(it) }
+                    }
+                    item {
+                        DText(if (searched != null) "Results for \"$searched\"" else "Popular near you", 13.sp, p.muted, FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+                    }
+                    val list = results
+                    when {
+                        list == null -> item { DText("Loading…", 14.sp, p.muted, modifier = Modifier.padding(vertical = 8.dp)) }
+                        failed -> item { DText("Couldn't reach the station directory. Check your connection.", 14.sp, p.muted, modifier = Modifier.padding(vertical = 8.dp)) }
+                        list.isEmpty() -> item { DText("No stations found.", 14.sp, p.muted, modifier = Modifier.padding(vertical = 8.dp)) }
+                        else -> items(list) { StationPick(it) }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { DText("Cancel", 16.sp, p.muted, FontWeight.Bold) } },
+    )
+}

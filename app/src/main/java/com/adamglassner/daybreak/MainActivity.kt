@@ -237,6 +237,7 @@ private fun NavBar(selected: Int, onSelect: (Int) -> Unit) {
         ClockStyle.RADIO -> if (p.dark) c(0xFF2A2420) else p.surface2
         ClockStyle.TERMINAL -> p.bg
         ClockStyle.CLASSIC -> p.surface
+        ClockStyle.MODERN -> p.bg
     }
     Column(Modifier.fillMaxWidth().background(barColor)) {
         val lineColor = when (db.style) {

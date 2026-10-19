@@ -176,6 +176,7 @@ private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, 
         ClockStyle.RADIO -> "Radio"
         ClockStyle.TERMINAL -> "Terminal"
         ClockStyle.CLASSIC -> "Classic Daybreak"
+        ClockStyle.MODERN -> "Modern"
     }
     val shape = RoundedCornerShape(16.dp)
     Column(
@@ -199,6 +200,7 @@ private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, 
                     ClockStyle.RADIO -> c(0xFF0A0606)
                     ClockStyle.TERMINAL -> c(0xFF000000)
                     ClockStyle.CLASSIC -> c(0xFFC0C0C0)
+                    ClockStyle.MODERN -> c(0xFF0B0D12)
                 },
             ),
             contentAlignment = Alignment.Center,
@@ -208,6 +210,10 @@ private fun StyleCard(style: ClockStyle, selected: Boolean, modifier: Modifier, 
                 ClockStyle.COLORS -> DText("10:09", 20.sp, c(0xFF1A0B3A), FontWeight.SemiBold, family = FredokaFont)
                 ClockStyle.RETRO -> DText("10:09", 26.sp, c(0xFFF2B544), family = BebasFont, letterSpacing = 1.sp)
                 ClockStyle.TERMINAL -> DText(">10:09_", 24.sp, c(0xFF33FF66), family = TerminalFont)
+                ClockStyle.MODERN -> Box(
+                    Modifier.fillMaxSize().background(Brush.linearGradient(listOf(c(0xFF0B0D12), c(0xFF2A2550)))),
+                    contentAlignment = Alignment.Center,
+                ) { DText("10:09", 24.sp, c(0xFFF3F4F8), family = ModernFont) }
                 ClockStyle.CLASSIC -> Column(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxWidth().height(12.dp).background(Brush.horizontalGradient(listOf(c(0xFF000080), c(0xFF1084D0)))))
                     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {

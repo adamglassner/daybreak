@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class ClockStyle { STOCK, COLORS, RETRO, RADIO, TERMINAL, CLASSIC }
+enum class ClockStyle { STOCK, MODERN, COLORS, RETRO, RADIO, TERMINAL, CLASSIC }
 enum class ThemeMode { DARK, LIGHT, SYSTEM }
 
 /** Days use java.time.DayOfWeek numbering: 1 = Monday … 7 = Sunday. */
@@ -74,6 +74,9 @@ data class Settings(
     val radioCountry: String = "",
     /** The SEEK button's style: a SeekMode name. */
     val radioSeek: String = "ANYWHERE",
+    val sleepSound: String = "RAIN",
+    val sleepMinutes: Int = 30,
+    val sleepVolume: Float = 0.6f,
 )
 
 data class TimerState(
@@ -288,6 +291,9 @@ object Store {
         put("radioPresets", JSONArray().apply { s.radioPresets.forEach { st -> put(st?.let { stationJson(it) } ?: JSONObject.NULL) } })
         put("radioCountry", s.radioCountry)
         put("radioSeek", s.radioSeek)
+        put("sleepSound", s.sleepSound)
+        put("sleepMinutes", s.sleepMinutes)
+        put("sleepVolume", s.sleepVolume.toDouble())
     }.toString()
 
     fun stationJson(st: Station): JSONObject = JSONObject().apply {
@@ -339,6 +345,9 @@ object Store {
             },
             radioCountry = o.optString("radioCountry", ""),
             radioSeek = o.optString("radioSeek", "ANYWHERE"),
+            sleepSound = o.optString("sleepSound", "RAIN"),
+            sleepMinutes = o.optInt("sleepMinutes", 30),
+            sleepVolume = o.optDouble("sleepVolume", 0.6).toFloat(),
         )
     }
 

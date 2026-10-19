@@ -47,6 +47,11 @@
             android:taskAffinity="com.adamglassner.daybreak.ring" />
 
         <service
+            android:name=".sleep.SleepService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <service
             android:name=".alarm.AlarmService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />

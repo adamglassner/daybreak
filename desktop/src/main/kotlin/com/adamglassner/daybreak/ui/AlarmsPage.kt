@@ -231,7 +231,7 @@ fun AlarmDialog(edit: AlarmEdit, settings: Settings, onClose: () -> Unit) {
         DText("Repeat · ${describeDays(a.days)}", 14.sp, p.text)
         DayToggles(a.days) { d -> a = a.copy(days = if (d in a.days) a.days - d else a.days + d) }
         FCard(Modifier.fillMaxWidth(), padding = 0.dp) {
-            SoundPicker("Sound", a.soundName) { uri, name -> a = a.copy(soundUri = uri, soundName = name) }
+            SoundPicker("Sound", a.soundName, allowRadio = true) { uri, name -> a = a.copy(soundUri = uri, soundName = name) }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {

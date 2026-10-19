@@ -70,6 +70,8 @@ class AlarmService : Service() {
     }
 
     private var player: MediaPlayer? = null
+    private var radioPlayer: androidx.media3.exoplayer.ExoPlayer? = null
+    private var currentVolume = 1f
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -110,6 +112,7 @@ class AlarmService : Service() {
 
     private fun ring(intent: Intent) {
         stopPlayback()
+        if (intent.getStringExtra(Scheduler.EXTRA_KIND) != Scheduler.KIND_PREVIEW) com.adamglassner.daybreak.sleep.SleepSounds.stop()
         val kind = intent.getStringExtra(Scheduler.EXTRA_KIND) ?: Scheduler.KIND_ALARM
         val id = intent.getIntExtra(Scheduler.EXTRA_ID, 0)
         val settings = Store.settings.value
@@ -156,7 +159,14 @@ class AlarmService : Service() {
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "daybreak:ring").apply { acquire(AUTO_STOP_MS + 5_000) }
 
         takeFocus()
-        startPlayer(soundUri, if (gradual) 0.02f else 1f)
+        currentVolume = if (gradual) 0.02f else 1f
+        val radioUrl = RadioAlarm.url(soundUri)
+        if (radioUrl != null) {
+            com.adamglassner.daybreak.radio.Radio.stop() // the alarm's own player takes over
+            startRadio(radioUrl)
+        } else {
+            startPlayer(soundUri, currentVolume)
+        }
         if (vibrate) startVibration()
         if (gradual) {
             rampStart = System.currentTimeMillis()
@@ -176,13 +186,54 @@ class AlarmService : Service() {
         override fun run() {
             val frac = ((System.currentTimeMillis() - rampStart).toFloat() / rampMs).coerceIn(0f, 1f)
             val vol = (frac * frac).coerceAtLeast(0.02f)
+            currentVolume = vol
             runCatching { player?.setVolume(vol, vol) }
+            runCatching { radioPlayer?.volume = vol }
             _ringing.value = _ringing.value?.copy(volume = frac)
             if (frac < 1f) handler.postDelayed(this, 200)
         }
     }
 
     private val autoStop = Runnable { finish() }
+
+    /**
+     * Wake to the radio: plays the station on the alarm volume. If it can't start within
+     * [RadioAlarm.START_TIMEOUT_MS] (no internet, station down) or stops later, the alarm
+     * falls back to the regular alarm sound so it still wakes you.
+     */
+    private fun startRadio(url: String) {
+        val attrs = androidx.media3.common.AudioAttributes.Builder()
+            .setUsage(androidx.media3.common.C.USAGE_ALARM)
+            .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MUSIC)
+            .build()
+        try {
+            val p = androidx.media3.exoplayer.ExoPlayer.Builder(this).build()
+            p.setAudioAttributes(attrs, false)
+            p.addListener(object : androidx.media3.common.Player.Listener {
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) = fallbackToTone()
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (state == androidx.media3.common.Player.STATE_ENDED) fallbackToTone()
+                }
+            })
+            p.setMediaItem(androidx.media3.common.MediaItem.fromUri(url))
+            p.volume = currentVolume
+            p.prepare()
+            p.play()
+            radioPlayer = p
+            handler.postDelayed(radioWatchdog, RadioAlarm.START_TIMEOUT_MS)
+        } catch (_: Exception) {
+            fallbackToTone()
+        }
+    }
+
+    private val radioWatchdog = Runnable { if (radioPlayer?.isPlaying != true) fallbackToTone() }
+
+    private fun fallbackToTone() {
+        handler.removeCallbacks(radioWatchdog)
+        radioPlayer?.let { runCatching { it.release() } }
+        radioPlayer = null
+        if (_ringing.value != null && player == null) startPlayer(null, currentVolume)
+    }
 
     private fun startPlayer(uriString: String?, startVolume: Float) {
         val attrs = AudioAttributes.Builder()
@@ -246,6 +297,9 @@ class AlarmService : Service() {
     private fun stopPlayback() {
         handler.removeCallbacks(rampTick)
         handler.removeCallbacks(autoStop)
+        handler.removeCallbacks(radioWatchdog)
+        runCatching { radioPlayer?.release() }
+        radioPlayer = null
         runCatching { player?.stop() }
         runCatching { player?.release() }
         player = null

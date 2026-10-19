@@ -191,6 +191,8 @@ fun ClockScreen(
             }
             Spacer(Modifier.height(14.dp))
             WeatherCard(weather, settings, onNext = { weatherIndex++ }, onRequestLocation, onOpenSettings)
+            Spacer(Modifier.height(14.dp))
+            SleepSoundsCard(Modifier.padding(horizontal = 20.dp))
             WorldClocks(settings, onAdd = { addingZone = true }, onRemove = { removingZone = it })
         }
     }
@@ -241,7 +243,15 @@ private fun Header(onOpenSettings: () -> Unit) {
 private fun StandardHero(settings: Settings) {
     val db = LocalDb.current
     Column(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        LiveAnalogClock(220.dp)
+        if (db.style == ClockStyle.MODERN) {
+            // A soft glow of the accent color behind the clock.
+            Box(
+                Modifier.size(280.dp).background(
+                    androidx.compose.ui.graphics.Brush.radialGradient(listOf(db.p.accent.copy(alpha = if (db.p.dark) 0.28f else 0.16f), androidx.compose.ui.graphics.Color.Transparent)),
+                ),
+                contentAlignment = Alignment.Center,
+            ) { LiveAnalogClock(220.dp) }
+        } else LiveAnalogClock(220.dp)
         Spacer(Modifier.height(8.dp))
         DigitalReadout(settings, 58)
     }
@@ -532,6 +542,8 @@ private fun RadioClock(
                 RadioZones(settings, onRemoveZone)
             }
         }
+
+        SleepSoundsCard(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
 
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             DText("SNOOZE", 14.sp, p.text, FontWeight.Bold)
