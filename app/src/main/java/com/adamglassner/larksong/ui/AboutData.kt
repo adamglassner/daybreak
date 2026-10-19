@@ -42,6 +42,11 @@ data class Release(val version: String, val date: String, val changes: List<Stri
 
 /** The change log shown in Settings → About → What's new (newest first). */
 val CHANGELOG = listOf(
+    Release("2.3.1", "October 2026", listOf(
+        "Radio buttons reorganized: play controls, then SEEK, PRESETS and MORE",
+        "PRESETS shows your saved stations by name, with Save here for the current station",
+        "MORE holds the country, what SEEK plays, the sleep timer and all stations",
+    )),
     Release("2.3.0", "October 2026", listOf(
         "Radio redesigned to fit phone screens better",
         "Choose the radio's country: it plays that country's most popular station, and ◀ ▶ go through its top stations",

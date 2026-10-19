@@ -1,5 +1,6 @@
 package com.adamglassner.larksong.ui
 
+import androidx.compose.foundation.verticalScroll
 import com.adamglassner.larksong.radio.SeekMode
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
@@ -160,6 +161,7 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
     val country = Radio.homeCountry()
     val countryName = Locale("", country).getDisplayCountry(Locale.US).ifBlank { country }
     var choosingCountry by remember { mutableStateOf(false) }
+    var menu by remember { mutableStateOf<String?>(null) }
     fun seekLabel(m: SeekMode) = if (m == SeekMode.NEAR_ME) countryName.uppercase() else m.label
 
     LedWindow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -176,60 +178,22 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
                 DText(status, 12.sp, if (r.error != null) c(0xFFFF8A9B) else p.panelText, FontWeight.Bold, maxLines = 1)
             }
 
-            // Tuning: previous, play/stop, next, and SEEK for a random station
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Main controls: tune down / play / tune up, then SEEK and the two menus.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Key("", Modifier.weight(1f), icon = DbIcons.Back, description = "Previous station") { Radio.step(-1) }
-                Key(if (r.playing || r.buffering) "STOP" else "PLAY", Modifier.weight(1.6f), lit = r.playing, big = true) { Radio.toggle() }
+                Key(if (r.playing || r.buffering) "STOP" else "PLAY", Modifier.weight(1.8f), lit = r.playing, big = true) { Radio.toggle() }
                 Key("", Modifier.weight(1f), icon = DbIcons.Chevron, description = "Next station") { Radio.step(1) }
-                Key("SEEK", Modifier.weight(1.3f), big = true, description = "Random ${seekLabel(mode).lowercase()} station") { Radio.seek() }
             }
-
-            // What SEEK spins to: a country (tap to choose it) or a style. Tapping one spins right away.
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Key(
-                    "${countryName.uppercase()} ▾", lit = mode == SeekMode.NEAR_ME, small = true,
-                    description = "Country: $countryName. Tap to choose another country.",
-                ) { choosingCountry = true }
-                SeekMode.entries.filter { it != SeekMode.NEAR_ME }.forEach { m ->
-                    Key(m.label, lit = m == mode, small = true, description = "Random ${m.label.lowercase()} station") { Radio.seek(m) }
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Key("SEEK", Modifier.weight(1f), description = "Random ${seekLabel(mode).lowercase()} station") { Radio.seek() }
+                Key("PRESETS", Modifier.weight(1f), description = "Your saved stations") { menu = "presets" }
+                Key("MORE ▾", Modifier.weight(1f), lit = r.sleepAt > 0, description = "Country, style, sleep timer and all stations") { menu = "more" }
             }
-
-            // Presets
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (i in 0 until PRESET_COUNT) {
-                    val preset = settings.radioPresets.getOrNull(i)
-                    val active = preset != null && preset.uuid == st?.uuid
-                    Key(
-                        "${i + 1}", Modifier.weight(1f), lit = active, small = true,
-                        description = if (preset != null) "Preset ${i + 1}: ${preset.name}" else "Preset ${i + 1}, empty",
-                        onLongClick = {
-                            if (st != null) {
-                                Radio.savePreset(i)
-                                Notices.show("Saved ${st.name} to preset ${i + 1}")
-                            }
-                        },
-                    ) {
-                        if (!Radio.playPreset(i)) {
-                            if (st != null) {
-                                Radio.savePreset(i)
-                                Notices.show("Saved ${st.name} to preset ${i + 1}")
-                            } else {
-                                Notices.show("Tune in to a station, then long-press a number to save it")
-                            }
-                        }
-                    }
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                val left = if (r.sleepAt > 0) ((r.sleepAt - now) / 60_000L).coerceAtLeast(0) + 1 else 0
-                Key(if (r.sleepAt > 0) "SLEEP $left MIN" else "SLEEP OFF", lit = r.sleepAt > 0, small = true) { Radio.cycleSleep() }
-                DText("TAP A NUMBER TO PLAY · HOLD IT TO SAVE THIS STATION", 10.sp, p.panelMuted, FontWeight.Bold, italic = true, maxLines = 2, modifier = Modifier.weight(1f))
-            }
+            val sleepLeft = if (r.sleepAt > 0) ((r.sleepAt - now) / 60_000L).coerceAtLeast(0) + 1 else 0
+            DText(
+                "SEEK: ${seekLabel(mode)}" + (if (sleepLeft > 0) " · SLEEP IN $sleepLeft MIN" else ""),
+                11.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.sp, maxLines = 1,
+            )
             if (showVolume) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     DText("VOL", 12.sp, p.panelMuted, FontWeight.Bold, italic = true)
@@ -246,12 +210,121 @@ fun TunerPanel(onBrowse: () -> Unit, showVolume: Boolean) {
         }
     }
 
+    when (menu) {
+        "presets" -> PresetsMenu(st, settings.radioPresets, onDismiss = { menu = null })
+        "more" -> MoreMenu(
+            countryName = countryName,
+            mode = mode,
+            sleepAt = r.sleepAt,
+            onCountry = { menu = null; choosingCountry = true },
+            onBrowse = onBrowse?.let { b -> { menu = null; b() } },
+            onDismiss = { menu = null },
+        )
+    }
+
     if (choosingCountry) {
         CountryDialog(onDismiss = { choosingCountry = false }) { picked ->
             choosingCountry = false
             Radio.chooseCountry(picked.code)
         }
     }
+}
+
+/** The radio's presets: tap a station to play it, or save the current station in a slot. */
+@Composable
+private fun PresetsMenu(current: Station?, presets: List<Station?>, onDismiss: () -> Unit) {
+    val p = LocalDb.current.p
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = p.panel,
+        title = { DText("PRESETS", 18.sp, p.panelText, FontWeight.Bold, italic = true, letterSpacing = 1.sp) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (i in 0 until PRESET_COUNT) {
+                    val preset = presets.getOrNull(i)
+                    val playingThis = preset != null && preset.uuid == current?.uuid
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                            .background(if (playingThis) c(0xFF3A1A20) else c(0xFF1C1816))
+                            .clickable(enabled = preset != null) { Radio.playPreset(i); onDismiss() }
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        DText("${i + 1}", 18.sp, if (playingThis) p.led else p.panelText, FontWeight.Bold, italic = true)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            DText(preset?.name ?: "Empty", 15.sp, if (preset != null) p.panelText else p.panelMuted, FontWeight.Bold, maxLines = 1)
+                            if (preset != null) DText(stationLine(preset), 11.sp, p.panelMuted, maxLines = 1)
+                        }
+                        if (current != null && !playingThis) {
+                            LinkButton("Save here", color = p.led) {
+                                Radio.savePreset(i)
+                                Notices.show("Saved ${current.name} to preset ${i + 1}")
+                            }
+                        }
+                    }
+                }
+                if (current == null) DText("Tune in to a station to save it here.", 13.sp, p.panelMuted)
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { DText("Done", 16.sp, p.led, FontWeight.Bold) } },
+    )
+}
+
+/** Radio settings: country, what SEEK spins to, the sleep timer, and the full station list. */
+@Composable
+private fun MoreMenu(
+    countryName: String,
+    mode: SeekMode,
+    sleepAt: Long,
+    onCountry: () -> Unit,
+    onBrowse: (() -> Unit)?,
+    onDismiss: () -> Unit,
+) {
+    val p = LocalDb.current.p
+    val now by rememberNow(15_000L)
+    val sleepLeft = if (sleepAt > 0) ((sleepAt - now) / 60_000L).coerceAtLeast(0) + 1 else 0
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = p.panel,
+        title = { DText("RADIO", 18.sp, p.panelText, FontWeight.Bold, italic = true, letterSpacing = 1.sp) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    DText("COUNTRY", 11.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.sp)
+                    Key("${countryName.uppercase()} ▾", Modifier.fillMaxWidth(), lit = mode == SeekMode.NEAR_ME, description = "Choose a country") { onCountry() }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    DText("SEEK PLAYS", 11.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.sp)
+                    SeekMode.entries.map { m -> m }.chunked(3).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            row.forEach { m ->
+                                val label = if (m == SeekMode.NEAR_ME) countryName.uppercase() else m.label
+                                Key(label, Modifier.weight(1f), lit = m == mode, small = true, description = "Random ${label.lowercase()} station") {
+                                    Radio.seek(m); onDismiss()
+                                }
+                            }
+                            repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                        }
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    DText(if (sleepLeft > 0) "SLEEP TIMER · OFF IN $sleepLeft MIN" else "SLEEP TIMER", 11.sp, p.panelMuted, FontWeight.Bold, italic = true, letterSpacing = 1.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(0, 15, 30, 60, 90).forEach { m ->
+                            val on = if (m == 0) sleepAt == 0L else sleepAt > 0 && sleepLeft in (m - 14)..m
+                            Key(if (m == 0) "OFF" else "$m", Modifier.weight(1f), lit = on, small = true,
+                                description = if (m == 0) "Sleep timer off" else "Turn off in $m minutes") { Radio.setSleep(m) }
+                        }
+                    }
+                }
+                if (onBrowse != null) {
+                    Key("ALL STATIONS…", Modifier.fillMaxWidth(), description = "Browse and search all stations") { onBrowse() }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { DText("Done", 16.sp, p.led, FontWeight.Bold) } },
+    )
 }
 
 // ---------- browsing stations ----------
